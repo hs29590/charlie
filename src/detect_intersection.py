@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import roslib
-roslib.load_manifest('create_eyes')
+roslib.load_manifest('charlie')
 import timeit
 import sys
 import rospy
