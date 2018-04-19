@@ -24,6 +24,7 @@
 #        [0, 0, 1, 0, 1, 0],
 #        [0, 0, 1, 0, 1, 0]]
 
+
 class FindPathInGrid(object):
     
     def __init__(self, _grid, _coordinates):
@@ -40,6 +41,9 @@ class FindPathInGrid(object):
         self.cost = 1
         self.final_path = None;
         self.final_expand = None;
+        self.turn_list = None;
+        self.node_list = None;
+        self.left_right_turn_list = None;
 
     def search(self,start_node,end_node):
         self.final_path = None;
@@ -116,94 +120,50 @@ class FindPathInGrid(object):
                                 closed[x2][y2] = 1
 
         self.final_expand = expand;
+        self.getNodeAndTurnList();
         return expand # make sure you return the shortest path
         
-    def getNodeAndTurnList(self, node_list, turn_list):
+    def getNodeAndTurnList(self):
+        self.node_list = []
+        self.turn_list = []
+        self.left_right_turn_list = []
         if(self.final_expand is not None):
             if(self.final_path is not None):
                 for ind in range(len(self.final_path)):
                     try:
-                        node_list.append(station_coordinates.keys()[station_coordinates.values().index(self.final_path[ind])]);
-                        turn_list.append(self.final_expand[self.final_path[ind][0]][self.final_path[ind][1]])
+                        self.node_list.append(self.station_coordinates.keys()[self.station_coordinates.values().index(self.final_path[ind])]);
+                        self.turn_list.append(self.final_expand[self.final_path[ind][0]][self.final_path[ind][1]])
                     except:
                         continue;
-                left_right_turn_list = ['S']
-                for step in range(len(turn_list)):
+                self.left_right_turn_list = ['S']
+                for step in range(len(self.turn_list)):
                     if(step == 0):
                         continue;
 
-                    if(turn_list[step] == '*'):
-                        left_right_turn_list.append('E');
+                    if(self.turn_list[step] == '*'):
+                        self.left_right_turn_list.append('E');
                         continue;
 
-                    if(turn_list[step-1] == turn_list[step]):
-                        left_right_turn_list.append('S');
-                    elif(turn_list[step-1] == '>'): #going right
-                        if(turn_list[step] == '^'):
-                            left_right_turn_list.append('L');
-                        elif(turn_list[step] == 'v'):
-                            left_right_turn_list.append('R');
-                    elif(turn_list[step-1] == '<'): #going left
-                        if(turn_list[step] == '^'):
-                            left_right_turn_list.append('R');
-                        elif(turn_list[step] == 'v'):
-                            left_right_turn_list.append('L');
-                    elif(turn_list[step-1] == 'v'): #going down
-                        if(turn_list[step] == '<'):
-                            left_right_turn_list.append('R');
-                        elif(turn_list[step] == '>'):
-                            left_right_turn_list.append('L');
-                    elif(turn_list[step-1] == '^'): #going up
-                        if(turn_list[step] == '<'):
-                            left_right_turn_list.append('L');
-                        elif(turn_list[step] == '>'):
-                            left_right_turn_list.append('R');
-
-        return left_right_turn_list;
+                    if(self.turn_list[step-1] == self.turn_list[step]):
+                        self.left_right_turn_list.append('S');
+                    elif(self.turn_list[step-1] == '>'): #going right
+                        if(self.turn_list[step] == '^'):
+                            self.left_right_turn_list.append('L');
+                        elif(self.turn_list[step] == 'v'):
+                            self.left_right_turn_list.append('R');
+                    elif(self.turn_list[step-1] == '<'): #going left
+                        if(self.turn_list[step] == '^'):
+                            self.left_right_turn_list.append('R');
+                        elif(self.turn_list[step] == 'v'):
+                            self.left_right_turn_list.append('L');
+                    elif(self.turn_list[step-1] == 'v'): #going down
+                        if(self.turn_list[step] == '<'):
+                            self.left_right_turn_list.append('R');
+                        elif(self.turn_list[step] == '>'):
+                            self.left_right_turn_list.append('L');
+                    elif(self.turn_list[step-1] == '^'): #going up
+                        if(self.turn_list[step] == '<'):
+                            self.left_right_turn_list.append('L');
+                        elif(self.turn_list[step] == '>'):
+                            self.left_right_turn_list.append('R');
                     
-
-
-grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-       [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
-       [1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-       [1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
-       [1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
-       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
-
-
-station_coordinates = {}
-station_coordinates['A'] = [1, 9]; # 0
-station_coordinates['B'] = [5, 9]; # 1
-station_coordinates['C'] = [1, 7]; # 2
-station_coordinates['D'] = [5, 7]; # 3
-station_coordinates['E'] = [1, 5]; # 4
-station_coordinates['F'] = [5, 5]; # 5
-station_coordinates['G'] = [3, 1]; # 6
-station_coordinates['H'] = [1, 1]; # 7
-station_coordinates['I'] = [3, 3]; # 8
-station_coordinates['J'] = [3, 5]; # 9
-station_coordinates['K'] = [3, 7]; # 10
-station_coordinates['L'] = [3, 9]; # 11
-station_coordinates['M'] = [1, 3]; # 12
-
-findPathObject = FindPathInGrid(grid, station_coordinates);
-
-findPathObject.search('H', 'B')
-
-#if(findPathObject.final_expand is not None):
-#    for i in findPathObject.final_expand:
-#        print i
-        
-#print findPathObject.final_path;
-
-
-node_list = []
-turn_list = []
-
-print findPathObject.getNodeAndTurnList(node_list, turn_list);
-print node_list
-#print turn_list
-
-
-
