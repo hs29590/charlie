@@ -181,7 +181,12 @@ class DriveCreate2:
       else:
           self.mode_pub.publish("safe");
           self.state = "FollowLine";
-          
+
+      self.pathPlanner.calculatePath();
+      print("Path returned with length: ");
+      print(self.pathPlanner.getLeftRightTurnList()); 
+      print(self.pathPlanner.getNodeList()); 
+
   def turnAndGo(self):
       if(self.isAsleep):
           call(["rosservice", "call", "/raspicam_node/start_capture"]);
