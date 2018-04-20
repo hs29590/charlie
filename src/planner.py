@@ -70,10 +70,10 @@ class Planner:
             return None;
         
         
-planner = Planner();
-planner.setStartNode('B');
-planner.setEndNode('F');
-planner.calculatePath();
-print planner.getLeftRightTurnList();
-print planner.getTurnList();
-print planner.getNodeList();    
+#planner = Planner();
+#planner.setStartNode('B');
+#planner.setEndNode('F');
+#planner.calculatePath();
+#print planner.getLeftRightTurnList();
+#print planner.getTurnList();
+#print planner.getNodeList();    

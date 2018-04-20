@@ -4,6 +4,7 @@ import roslib
 roslib.load_manifest('charlie')
 import sys
 import rospy
+from planner import Planner
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32
@@ -68,6 +69,17 @@ class DriveCreate2:
     self.mainframe.columnconfigure(0, weight=50,minsize=50)
     self.mainframe.rowconfigure(0, weight=50,minsize=50)
 
+    self.pathPlanner = Planner();
+
+    self.srcNode = StringVar();
+    self.dstNode = StringVar();
+
+    srcChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'}
+    dstChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'}
+
+    self.srcNode.set('A');
+    self.dstNode.set('G');
+
     #GUI Text
     self.batteryLabel = ttk.Label(self.mainframe, textvariable=self.batteryStatus, font=('Helvetica',12));
     self.batteryLabel.grid(row=1, column=1);
@@ -85,6 +97,7 @@ class DriveCreate2:
     self.sonarLabel.grid(row=0,column=1);
 
     #GUI Buttons
+
     self.buttonStyle = ttk.Style()
     self.buttonStyle.configure('my.TButton', font=('Helvetica', 18))
 
@@ -95,6 +108,18 @@ class DriveCreate2:
     ttk.Button(self.mainframe, text="Un-Dock", style='my.TButton', command=self.undock, width = 16).grid(row=8,column=1, pady=15)
 
     ttk.Button(self.mainframe, text="Reset", style='my.TButton', command=self.resetPressed, width=16).grid(row=10, column=0, pady=5)
+
+    srcSelectMenu = OptionMenu(self.mainframe, self.srcNode, *srcChoices)
+    #Label(self.mainframe, text="Choose Process", font=("Helvetica", 14)).grid(row = 2, column=1, pady=(15,2))
+    srcSelectMenu.grid(row=11, column=1)
+    #srcSelectMenu.bind('<Button-1>', self.dropdownopen)
+    self.srcNode.trace('w', self.srcNodeChanged)
+    
+    dstSelectMenu = OptionMenu(self.mainframe, self.dstNode, *dstChoices)
+    #Label(self.mainframe, text="Choose Process", font=("Helvetica", 14)).grid(row = 2, column=1, pady=(15,2))
+    dstSelectMenu.grid(row=11, column=2)
+    #srcSelectMenu.bind('<Button-1>', self.dropdownopen)
+    self.dstNode.trace('w', self.dstNodeChanged)
 
     self.root.after(1000, self.updateLabel);
 
@@ -114,6 +139,7 @@ class DriveCreate2:
     
     self.STOP_TONE = 2;
     self.FOLLOW_TONE = 5;
+    self.intersectionVisibleCount = 0;
 
     #Subscribers
     self.bat_sub = rospy.Subscriber('iRobot_0/battery', Battery, self.batteryCallback)
@@ -123,8 +149,17 @@ class DriveCreate2:
     self.ctrl_effort_sub = rospy.Subscriber('control_effort', Float64, self.ctrlEffortCallback);
     self.odom_sub = rospy.Subscriber('iRobot_0/odom', Odometry, self.odomCallback)
     self.sonar_sub = rospy.Subscriber('sonar_drive', Bool, self.sonarCallback);
-    
+    self.intersection_sub = rospy.Subscriber('intersection_visible', Bool, self.intersectionCallback); 
+   
     self.timeOfLastActivity = rospy.Time.now();
+
+  def srcNodeChanged(self, *args):
+      print('src node changed' + self.srcNode.get());
+      self.pathPlanner.setStartNode(self.srcNode.get());
+  
+  def dstNodeChanged(self, *args):
+      print('dst node changed' + self.dstNode.get());
+      self.pathPlanner.setEndNode(self.dstNode.get());
 
   def resetPressed(self):
       self.timeOfLastActivity = rospy.Time.now();
@@ -209,6 +244,12 @@ class DriveCreate2:
 
       self.root.after(200, self.updateLabel);
  
+  def intersectionCallback(self, msg):
+      if(msg.data):
+        self.intersectionVisibleCount = self.intersectionVisibleCount + 1;
+        
+
+  
   def lineVisibleCallback(self,msg):
       self.lineVisible.set("Line: " + str(msg.data));
       self.line_drive = msg.data;
