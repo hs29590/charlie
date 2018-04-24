@@ -1,28 +1,20 @@
 <?xml version="1.0"?>
 <launch>
-    <!-- Receives CmdVel, takeoff, reset and land messages from the MQTT and publishes on ROS -->
-    <!-- <param name="mqttBroker" value="localhost" /> -->
-
-    <node name="followLine2" pkg="create_eyes" type="followLine2.py" output="screen" clear_params="true">
+    <node name="processImage" pkg="charlie" type="processImage.py" output="screen" clear_params="true">
         <param name="loop_rate" value="200" />
         <param name="show_images" value="False" />
         <param name="use_pid" value="False" />
     </node>
-    <!-- Sends Image and Navdata to the Mqtt broker -->
-    <node name="controller" pkg="create_eyes" type="controller_with_gui.py" output="screen" clear_params="true">
-        <!-- Make sure the topics published are subscribed with the exact name -->
+    
+    <node name="controller" pkg="charlie" type="controller_with_gui.py" output="screen" clear_params="true">
         <param name="publishedMqttTopic_navdata" value="/mqtt/navdata"/>
     </node>
 
-<!--    <node name="statePublisher" pkg="create_eyes" type="statePublisher.py" output="screen" clear_params="true">
+    <node name="sonarPublisher" pkg="charlie" type="sonarNode.py" output="screen" clear_params="true">
         <param name="sampleParam" value="none" />
-    </node> -->
+    </node>
 
-<!--    <node name="sonarPublisher" pkg="create_eyes" type="sonarNode.py" output="screen" clear_params="true">
-        <param name="sampleParam" value="none" />
-    </node> -->
-
-  <node name="beeper" pkg="create_eyes" type="beepNode.py" output="screen" clear_params="true">
+  <node name="beeper" pkg="charlie" type="beepNode.py" output="screen" clear_params="true">
       <param name="beepType" value="continuous" />
   </node>
 
