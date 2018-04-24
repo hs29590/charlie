@@ -143,7 +143,9 @@ class DriveCreate2:
     self.last_drive_lin = 0.0;
     self.last_drive_ang = 0.0;
     self.noLineCount = 0;
+    self.intersectionVisibleCount = 0;
     
+
     self.STOP_TONE = 2;
     self.FOLLOW_TONE = 5;
     self.currentPath = None;
@@ -265,7 +267,9 @@ class DriveCreate2:
       if(msg.data):
         #rospy.loginfo("Inside Intersection Visible");
         self.state == "AtIntersection";
+        self.intersectionVisibleCount = self.intersectionVisibleCount + 1;
       else:
+        self.intersectionVisibleCount = 0;
         self.state == "FollowLine";
   
   def lineVisibleCallback(self,msg):
@@ -377,28 +381,35 @@ class DriveCreate2:
             self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/50.0));
             self.noLineCount = 0;
             
-    elif(self.state == "AtIntersection"):
-        rospy.loginfo("Inside Intersection in Err Callback");
+    if(self.intersectionVisibleCount > 10 and self.state != "Stop"):
+        self.sendStopCmd();
+        rospy.loginfo("[Intersection] Sent Stop cmd");
         nextTurn = self.currentPath[self.currentPathIndex];
         self.currentPathIndex = self.currentPathIndex + 1;
         rospy.loginfo("Next Turn is: " + nextTurn); 
-        #print("At Intersection, executing next index: ");
-        #print(self.currentPath[self.currentPathIndex]);
-        if(nextTurn == 'E' and err.data != -1000.0 and self.sonar_drive):
+        idxx = 0;
+        while(idxx < 10):
+            self.smooth_drive(self.LINEAR_SPEED, 0.0);
+            time.sleep(0.1);
+            idxx = idxx + 1;
+        self.sendStopCmd();
+        if(nextTurn == 'E'):
             rospy.loginfo("Stopping at end");
-            self.smooth_drive(0.0,0.0);
-            #self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/50.0));
+            self.state = "Stop";
         elif(nextTurn == 'L'):
-            #self.smooth_drive(self.LINEAR_SPEED, (-float(err.data - 10)/50.0));
+            self.state = "Turn";
             rospy.loginfo("Turning Left");
             self.command_turn(-math.pi/2);
-            rospy.loginfo("Turning RIght");
+            self.state = "FollowLine"
         elif(nextTurn == 'R'):
             #self.smooth_drive(self.LINEAR_SPEED, (-float(err.data + 10)/50.0));
+            rospy.loginfo("Turning Right");
+            self.state = "Turn";
             self.command_turn(math.pi/2);
+            self.state = "FollowLine"
         elif(nextTurn == 'S'):
             rospy.loginfo("Going Straight");
-            self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/50.0));
+            #self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/50.0));
 
 def main(args):
   rospy.init_node('create_eyes_controller', anonymous=True)
