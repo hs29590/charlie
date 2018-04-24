@@ -55,6 +55,9 @@ class DriveCreate2:
     self.batteryStatus = StringVar();
     self.batteryStatus.set("Battery: na%");
     
+    self.intersectionVisible = StringVar();
+    self.intersectionVisible.set("Intersection: False");
+    
     self.lineVisible = StringVar();
     self.lineVisible.set("Line: False");
 
@@ -77,8 +80,8 @@ class DriveCreate2:
     srcChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'}
     dstChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'}
 
-    self.srcNode.set('A');
-    self.dstNode.set('G');
+    self.srcNode.set(' ');
+    self.dstNode.set(' ');
 
     #GUI Text
     self.batteryLabel = ttk.Label(self.mainframe, textvariable=self.batteryStatus, font=('Helvetica',12));
@@ -95,6 +98,10 @@ class DriveCreate2:
 
     self.sonarLabel = ttk.Label(self.mainframe, textvariable=self.sonarStatus, font=('Helvetica',12));
     self.sonarLabel.grid(row=0,column=1);
+
+    self.intersectionLabel = ttk.Label(self.mainframe, textvariable=self.intersectionVisible, font=('Helvetica',12));
+    self.intersectionLabel.grid(row=13, column=0);
+
 
     #GUI Buttons
 
@@ -139,7 +146,6 @@ class DriveCreate2:
     
     self.STOP_TONE = 2;
     self.FOLLOW_TONE = 5;
-    self.intersectionVisible = False;
     self.currentPath = None;
     self.currentPathIndex = 0;
 
@@ -255,7 +261,7 @@ class DriveCreate2:
       self.root.after(200, self.updateLabel);
  
   def intersectionCallback(self, msg):
-      self.intersectionVisible = msg.data;
+      self.intersectionVisible.set("Intersection: " + str(msg.data));
       if(msg.data):
         #rospy.loginfo("Inside Intersection Visible");
         self.state == "AtIntersection";
@@ -375,6 +381,7 @@ class DriveCreate2:
         rospy.loginfo("Inside Intersection in Err Callback");
         nextTurn = self.currentPath[self.currentPathIndex];
         self.currentPathIndex = self.currentPathIndex + 1;
+        rospy.loginfo("Next Turn is: " + nextTurn); 
         #print("At Intersection, executing next index: ");
         #print(self.currentPath[self.currentPathIndex]);
         if(nextTurn == 'E' and err.data != -1000.0 and self.sonar_drive):
