@@ -253,10 +253,10 @@ class DriveCreate2:
 
       if(self.state == "FollowLine" and self.line_drive and self.sonar_drive):
           self.tone_pub.publish(self.FOLLOW_TONE);
-          self.isAsleep = True;
+#    self.isAsleep = True;
 
-      if(self.state == "Stop" and rospy.Time.now() - self.timeOfLastActivity > rospy.Duration(10)):
-          call(["rosservice", "call", "/raspicam_node/stop_capture"]);
+#      if(self.state == "Stop" and rospy.Time.now() - self.timeOfLastActivity > rospy.Duration(10)):
+#          call(["rosservice", "call", "/raspicam_node/stop_capture"]);
 
       self.root.after(200, self.updateLabel);
  
