@@ -68,8 +68,9 @@ class ImageProcessor:
     
     #masked_intersection = cv2.bitwise_and(hue_mask, hue_mask, mask = red_mask)
     
-    cv2.imshow("hue mask", hue_mask);
-    cv2.waitKey(3);
+    if(self.showImages):
+        cv2.imshow("hue mask", hue_mask);
+        cv2.waitKey(3);
 
     n_white_pix = numpy.sum(hue_mask == 255)
     if(n_white_pix > 60):
@@ -87,15 +88,17 @@ class ImageProcessor:
     upper_yellow_hue = numpy.array([30])
 
     yellow_hue_mask = cv2.inRange(hue_img, lower_yellow_hue, upper_yellow_hue);
-
-    cv2.imshow('yellow hue', yellow_hue_mask);
-    cv2.waitKey(3)
+    
+    if(self.showImages):
+        cv2.imshow('yellow hue', yellow_hue_mask);
+        cv2.waitKey(3)
 
     sat_mask = cv2.inRange(sat_img, lower_sat, upper_sat);
     yellow_hsv_mask = cv2.bitwise_or(sat_mask, yellow_hue_mask)
     
-    cv2.imshow('yellow hue + sat', yellow_hsv_mask);
-    cv2.waitKey(3)
+    if(self.showImages):
+        cv2.imshow('yellow hue + sat', yellow_hsv_mask);
+        cv2.waitKey(3)
 
 
     lower = numpy.uint8([0, 120, 120])
