@@ -4,29 +4,55 @@ class Planner:
 
     def __init__(self):
 
+        #self.grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        #       [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+        #       [1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+        #       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        #       [1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+        #       [1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+        #       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+
+
+
         self.grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-               [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
-               [1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-               [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-               [1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
-               [1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+               [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+               [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+               [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+               [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1],
                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
 
+        #self.station_coordinates = {}
+        #self.station_coordinates['A'] = [1, 9]; # 0
+        #self.station_coordinates['B'] = [5, 9]; # 1
+        #self.station_coordinates['C'] = [1, 7]; # 2
+        #self.station_coordinates['D'] = [5, 7]; # 3
+        #self.station_coordinates['E'] = [1, 5]; # 4
+        #self.station_coordinates['F'] = [5, 5]; # 5
+        #self.station_coordinates['G'] = [3, 1]; # 6
+        #self.station_coordinates['H'] = [1, 1]; # 7
+        #self.station_coordinates['I'] = [3, 3]; # 8
+        #self.station_coordinates['J'] = [3, 5]; # 9
+        #self.station_coordinates['K'] = [3, 7]; # 10
+        #self.station_coordinates['L'] = [3, 9]; # 11
+        #self.station_coordinates['M'] = [1, 3]; # 12
 
-        self.station_coordinates = {}
-        self.station_coordinates['A'] = [1, 9]; # 0
-        self.station_coordinates['B'] = [5, 9]; # 1
-        self.station_coordinates['C'] = [1, 7]; # 2
-        self.station_coordinates['D'] = [5, 7]; # 3
+	self.station_coordinates = {}
+        self.station_coordinates['A'] = [3,1];#[1, 9]; # 0
+        self.station_coordinates['B'] = [3,3];#[5, 9]; # 1
+        self.station_coordinates['C'] = [5,3];#[1, 7]; # 2
+        self.station_coordinates['D'] = [3, 5]; # 3
         self.station_coordinates['E'] = [1, 5]; # 4
-        self.station_coordinates['F'] = [5, 5]; # 5
-        self.station_coordinates['G'] = [3, 1]; # 6
+        self.station_coordinates['F'] = [3,7];#[5, 5]; # 5
+        self.station_coordinates['G'] = [5,7];#[3, 1]; # 6
         self.station_coordinates['H'] = [1, 1]; # 7
         self.station_coordinates['I'] = [3, 3]; # 8
         self.station_coordinates['J'] = [3, 5]; # 9
         self.station_coordinates['K'] = [3, 7]; # 10
         self.station_coordinates['L'] = [3, 9]; # 11
         self.station_coordinates['M'] = [1, 3]; # 12
+
+
 
         self.findPathObject = FindPathInGrid(self.grid, self.station_coordinates);
 
