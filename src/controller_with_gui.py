@@ -139,14 +139,15 @@ class DriveCreate2:
     
     self.STOP_TONE = 2;
     self.FOLLOW_TONE = 5;
-    self.intersectionVisibleCount = 0;
+    self.intersectionVisible = False;
+    self.currentPath = None;
+    self.currentPathIndex = 0;
 
     #Subscribers
     self.bat_sub = rospy.Subscriber('iRobot_0/battery', Battery, self.batteryCallback)
     self.line_visible_sub = rospy.Subscriber('line_visible', Bool, self.lineVisibleCallback)
     self.current_mode_sub = rospy.Subscriber('iRobot_0/current_mode', String, self.current_mode_callback);
     self.err_sub = rospy.Subscriber('line_error', Float32, self.errCallback)
-    self.ctrl_effort_sub = rospy.Subscriber('control_effort', Float64, self.ctrlEffortCallback);
     self.odom_sub = rospy.Subscriber('iRobot_0/odom', Odometry, self.odomCallback)
     self.sonar_sub = rospy.Subscriber('sonar_drive', Bool, self.sonarCallback);
     self.intersection_sub = rospy.Subscriber('intersection_visible', Bool, self.intersectionCallback); 
@@ -184,6 +185,10 @@ class DriveCreate2:
 
       self.pathPlanner.calculatePath();
       print("Path returned with length: ");
+
+      self.currentPath = self.pathPlanner.getLeftRightTurnList();
+      self.currentPathIndex = 1;
+
       print(self.pathPlanner.getLeftRightTurnList()); 
       print(self.pathPlanner.getNodeList()); 
 
@@ -250,10 +255,12 @@ class DriveCreate2:
       self.root.after(200, self.updateLabel);
  
   def intersectionCallback(self, msg):
+      self.intersectionVisible = msg.data;
       if(msg.data):
-        self.intersectionVisibleCount = self.intersectionVisibleCount + 1;
-        
-
+        rospy.loginfo("Inside Intersection Visible");
+        self.state == "AtIntersection";
+      else:
+        self.state == "FollowLine";
   
   def lineVisibleCallback(self,msg):
       self.lineVisible.set("Line: " + str(msg.data));
@@ -347,7 +354,6 @@ class DriveCreate2:
     self.yaw = euler[2]
 
   def errCallback(self,err):
-        
     if(self.state == "FollowLine"):
         if(err.data == -1000.0):
             #I will come here when I'm asked to follow line, but I can't see the line. User is expected to press go button again.
@@ -364,12 +370,22 @@ class DriveCreate2:
         else:
             self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/50.0));
             self.noLineCount = 0;
+            
+    elif(self.state == "AtIntersection"):
+        rospy.loginfo("Inside Intersection in Err Callback");
+        nextTurn = self.currentPath[self.currentPathIndex];
+        self.currentPathIndex = self.currentPathIndex + 1;
+        print("At Intersection, executing next index: ");
+        print(self.currentPath[self.currentPathIndex]);
+        if(nextTurn == 'E' and err.data != -1000.0 and self.sonar_drive):
+            self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/50.0));
+        elif(nextTurn == 'L'):
+            self.smooth_drive(self.LINEAR_SPEED, (-float(err.data - 10)/50.0));
+        elif(nextTurn == 'R'):
+            self.smooth_drive(self.LINEAR_SPEED, (-float(err.data + 10)/50.0));
+        elif(nextTurn == 'S'):
+            self.smooth_drive(self.LINEAR_SPEED, (-float(err.data + 10)/50.0));
 
-  def ctrlEffortCallback(self, err):
-      if(self.state == "FollowLine" and self.sonar_drive and self.line_drive):
-          self.smooth_drive(self.LINEAR_SPEED, (float(err.data)/30));
-          
-          
 def main(args):
   rospy.init_node('create_eyes_controller', anonymous=True)
   ic = DriveCreate2()

@@ -157,6 +157,7 @@ class ImageProcessor:
         err = self.SCALE_FACTOR * err;
 
         self.line_state_pub.publish(True);
+	self.err_pub.publish(err);
 
     else: #Moment not available. Probably, line isn't there
         err = -1000.0;
