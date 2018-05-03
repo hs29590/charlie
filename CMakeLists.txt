@@ -140,6 +140,10 @@ catkin_package(CATKIN_DEPENDS std_msgs
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
+add_executable(processImage_exe src/processImage.cpp)
+SET_TARGET_PROPERTIES(processImage_exe PROPERTIES OUTPUT_NAME processImage)
+target_link_libraries(processImage_exe ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+
 
 #add_executable(lineTracker_exe src/lineTracker.cpp)
 #SET_TARGET_PROPERTIES(${node_name}_exe PROPERTIES OUTPUT_NAME ${node_name})
