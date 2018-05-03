@@ -13,8 +13,27 @@
 using namespace cv;
 using namespace std;
 
-void imgCallback(const sensor_msgs::ImageConstPtr& msg)
+class LineErrorCalculator
 {
+    public:
+    LineErrorCalculator()
+    {
+        m_prevCx = 0;
+    }
+
+    ~LineErrorCalculator()
+    {
+    }
+    
+    int m_prevCx;
+
+    void imgCallback(const sensor_msgs::ImageConstPtr& msg);
+
+};
+
+void LineErrorCalculator::imgCallback(const sensor_msgs::ImageConstPtr& msg)
+{
+    //double start_sec =ros::Time::now().toSec();
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
@@ -76,6 +95,8 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg)
    
 	// Apply erosion or dilation on the image
 	cv::erode(yellow_mask,yellow_mask,kernel);
+		cv::imshow("Window", yellow_mask);
+		cv::waitKey(3);
 
 	// Draw an example circle on the video stream
    // if (cv_ptr->image.rows > 60 && cv_ptr->image.cols > 60)
@@ -106,14 +127,16 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg)
 		int cy = mu.m01/mu.m00;
 
 		cv::circle(cv_ptr->image, cv::Point(cx + (int)cv_ptr->image.size().width/4,cy), 10,  CV_RGB(255,0,0), 4);
-		cv::imshow("Window", cv_ptr->image);
-		cv::imshow("Window", cv_ptr->image);
-		cv::waitKey(3);
+		//cv::imshow("Window", cv_ptr->image);
+		//cv::imshow("Window", cv_ptr->image);
+		//cv::waitKey(3);
 	}
 	else
 	{
         //no moment found
 	}
+    //double end_sec =ros::Time::now().toSec();
+    //std::cout << "time: " << end_sec - start_sec << " sec\n";
 }
 
 int main(int argc, char** argv) {
@@ -122,44 +145,11 @@ int main(int argc, char** argv) {
 
     ros::NodeHandle nodeh;
 
-
     //create a gui window:
-    namedWindow("Output",1);
-    
+    LineErrorCalculator lineErrorCalculator;
 //    ros::Publisher test_pub = nodeh.advertise<std_msgs::String>("/chatter", 1);
-    ros::Subscriber img_sub = nodeh.subscribe("/raspicam_node/image_raw", 1, imgCallback);
+    ros::Subscriber img_sub = nodeh.subscribe("/raspicam_node/image_raw", 1, &LineErrorCalculator::imgCallback, &lineErrorCalculator);
     
-//    Mat output = Mat::zeros( 120, 350, CV_8UC3 );
-    
-/*    putText(output,
-            "Hello World :)",
-            cvPoint(15,70),
-            FONT_HERSHEY_PLAIN,
-            3,
-            cvScalar(0,255,0),
-            4);
-    
-    //display the image:
-    imshow("Output", output);
-    
-    //wait for the user to press any key:
-    waitKey(0);
-    int count = 0;
-    while(ros::ok())
-    {
-        std_msgs::String msg;
-        std::stringstream ss;
-        ss << "hello world " << count++;
-        msg.data = ss.str();
-        test_pub.publish(msg);    
-        cout << "Published..\n";
-        usleep(1000);
-        if(count > 10)
-        {
-            break;
-        }
-    }
-*/
 	ros::spin();
     return 0;
 
