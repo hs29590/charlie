@@ -141,10 +141,11 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
     
     //Get the moments of the mask to get general direction of the line
     cv::Moments mu = cv::moments(roi, false);
+    float cx = 0.0, cy = 0.0;
     if(mu.m00 > 0)
     {
-        float cx = (float)mu.m10/mu.m00;
-        float cy = (float)mu.m01/mu.m00;
+        cx = (float)mu.m10/mu.m00;
+        cy = (float)mu.m01/mu.m00;
 
         cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(255,0,0), 4);
         
@@ -153,7 +154,6 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
 
         err.data = (cx - (float)(cv_ptr->image.size().width)/2.0);
         err_pub.publish(err);
-        std::cout << "Charlie: " << err.data << std::endl;
         line_visible.data = true;
         line_visible_pub.publish(line_visible);
     }
@@ -170,10 +170,37 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         cv::imshow("Fin Img", cv_ptr->image);
         cv::waitKey(3);
     }
-//    double end_sec =ros::Time::now().toSec();
-   // ROS_INFO_THROTTLE(5, "Time Taken: %lf sec", end_sec - start_sec);
-//    std::cout << end_sec - start_sec << std::endl;
+    if(check_intersections)
+    {
+        //checks red intersections
+        cv::inRange(hsvImg, cv::Scalar(170,0,0), 
+                cv::Scalar(180,255,255),
+                hsv_mask);
 
+        cv::inRange(hsvImg, cv::Scalar(0,0,0),
+                cv::Scalar(10,255,255),
+                bgr_mask);
+        try
+        {
+            cv::bitwise_or(bgr_mask, hsv_mask, bgr_mask);
+        }
+        catch (cv::Exception& e)
+        {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+        //bgr_mask contains the intersections
+        cv::erode(bgr_mask,bgr_mask,kernel);
+        if(m_show_images)
+        {
+            cv::imshow("intersection mask", bgr_mask);
+            cv::waitKey(3);
+        }
+
+    }
+    //double end_sec =ros::Time::now().toSec();
+    //ROS_INFO_THROTTLE(5, "Time Taken: %lf sec", end_sec - start_sec);
+    //std::cout << end_sec - start_sec << std::endl;
 }
 
 int main(int argc, char** argv) {
