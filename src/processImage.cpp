@@ -3,6 +3,7 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Bool.h>
 #include <sensor_msgs/Image.h>
 #include <iostream>
 #include <image_transport/image_transport.h>
@@ -13,39 +14,68 @@
 using namespace cv;
 using namespace std;
 
-class LineErrorCalculator
+class ImageInfoExtractor
 {
     public:
-    LineErrorCalculator()
-    {
-        m_prevCx = 0;
-    }
+        ImageInfoExtractor()
+        {
+            m_prev_cx = 0;
+            m_show_images = false;
+            kernel = Mat::ones( 3, 3, CV_8U );
+            check_intersections = true;
+            bgr_color_lower[0] = bgr_color_lower[1] = bgr_color_lower[2] = 0;
+            hsv_color_lower[0] = hsv_color_lower[1] = hsv_color_lower[2] = 0;
+            
+            bgr_color_upper[0] = bgr_color_upper[1] = bgr_color_upper[2] = 0;
+            hsv_color_upper[0] = hsv_color_upper[1] = hsv_color_upper[2] = 0;
+            
+            process_scale = 0.25;
 
-    ~LineErrorCalculator()
-    {
-    }
-    
-    int m_prevCx;
+            err.data = -1000.0;
+        }
 
-    void imgCallback(const sensor_msgs::ImageConstPtr& msg);
+        ~ImageInfoExtractor()
+        {
+        }
+
+        int m_prev_cx;
+        bool m_show_images;
+        Mat kernel;
+        
+        int bgr_color_lower[3];
+        int bgr_color_upper[3];
+
+        int hsv_color_lower[3];
+        int hsv_color_upper[3];
+
+        ros::Publisher err_pub;
+        ros::Publisher line_visible_pub;
+
+        float process_scale;
+
+        std_msgs::Float32 err;
+        std_msgs::Bool line_visible;
+
+        bool check_intersections;
+        void imgCallback(const sensor_msgs::ImageConstPtr& msg);
 
 };
 
-void LineErrorCalculator::imgCallback(const sensor_msgs::ImageConstPtr& msg)
+void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-    //double start_sec =ros::Time::now().toSec();
+//    double start_sec =ros::Time::now().toSec();
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
-      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
     }
     catch (cv_bridge::Exception& e)
     {
-      ROS_ERROR("cv_bridge exception: %s", e.what());
-      return;
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
     }
 
-    cv::resize(cv_ptr->image, cv_ptr->image, cv::Size(), 0.25, 0.25);
+    cv::resize(cv_ptr->image, cv_ptr->image, cv::Size(), process_scale, process_scale);
 
     Mat hsvImg;
     try
@@ -54,103 +84,138 @@ void LineErrorCalculator::imgCallback(const sensor_msgs::ImageConstPtr& msg)
     }
     catch (cv::Exception& e)
     {
-      ROS_ERROR("cv_bridge exception: %s", e.what());
-      return;
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
     }
 
-    cv::Scalar lower_sat = cv::Scalar(220);
-    cv::Scalar upper_sat = cv::Scalar(255);
+    Mat hsv_mask = Mat::zeros(cv_ptr->image.size(), cv_ptr->image.type());
+    cv::inRange(hsvImg, cv::Scalar(hsv_color_lower[0], hsv_color_lower[1], hsv_color_lower[2]), 
+                        cv::Scalar(hsv_color_upper[0], hsv_color_upper[1], hsv_color_upper[2]),
+                        hsv_mask);
 
-    cv::Mat hsv_channels[3];   //destination array
-    cv::split(hsvImg,hsv_channels);//split source  
-
-    //Mat sat_mask;
-    Mat sat_mask = Mat::zeros(cv_ptr->image.size(), cv_ptr->image.type());
-    cv::inRange(hsv_channels[1], lower_sat, upper_sat, sat_mask);
-
-    cv::Scalar lower_yellow = cv::Scalar(0, 120, 120);
-    cv::Scalar upper_yellow = cv::Scalar(255, 255, 255);
-
-
-    //Mat yellow_mask;
-    Mat yellow_mask = Mat::zeros(cv_ptr->image.size(), cv_ptr->image.type());
-    cv::inRange(cv_ptr->image, lower_yellow, upper_yellow, yellow_mask);
+    if(m_show_images)
+    {
+        cv::imshow("hsv mask", hsv_mask);
+        cv::waitKey(3);
+    }
+    
+    Mat bgr_mask = Mat::zeros(cv_ptr->image.size(), cv_ptr->image.type());
+    cv::inRange(cv_ptr->image, cv::Scalar(bgr_color_lower[0], bgr_color_lower[1], bgr_color_lower[2]), 
+                               cv::Scalar(bgr_color_upper[0], bgr_color_upper[1], bgr_color_upper[2]), 
+                               bgr_mask);
+    if(m_show_images)
+    {
+        cv::imshow("bgr mask", bgr_mask);
+        cv::waitKey(3);
+    }
 
     //doing an AND over the results and saving in yellow_mask
     try
     {
-        cv::bitwise_and(yellow_mask, sat_mask, yellow_mask);
+        cv::bitwise_and(bgr_mask, hsv_mask, bgr_mask);
     }
     catch (cv::Exception& e)
     {
-      ROS_ERROR("cv_bridge exception: %s", e.what());
-      return;
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
     }
 
+    cv::GaussianBlur( bgr_mask, bgr_mask, cv::Size( 5, 5 ), 0, 0 );
 
-    cv::GaussianBlur( yellow_mask, yellow_mask, cv::Size( 3, 3 ), 0, 0 );
+    // Apply erosion or dilation on the image
+    cv::erode(bgr_mask,bgr_mask,kernel);
 
-	Mat kernel;
-    kernel = Mat::ones( 3, 3, CV_8U );
-   
-	// Apply erosion or dilation on the image
-	cv::erode(yellow_mask,yellow_mask,kernel);
-		cv::imshow("Window", yellow_mask);
-		cv::waitKey(3);
-
-	// Draw an example circle on the video stream
-   // if (cv_ptr->image.rows > 60 && cv_ptr->image.cols > 60)
-   //   cv::circle(cv_ptr->image, cv::Point(50, 50), 10, CV_RGB(255,0,0));
-
-    // Update GUI Window
-    //cv::imshow("Window", cv_ptr->image);
- //   cv::imshow("Window", outImg);
- //   cv::waitKey(3);
-
-//	CvRect cropRect = cvRect(0, , 100, 300); // ROI in source image
- 
     cv::Rect rect((int)cv_ptr->image.size().width/4,
-                  0,
-                  (int)cv_ptr->image.size().width/2,
-                  (int)2*cv_ptr->image.size().height/3);
+            0,
+            (int)cv_ptr->image.size().width/2,
+            (int)2*cv_ptr->image.size().height/3);
 
 
-    Mat roi = yellow_mask(rect);
-//	cvSetImageROI(img, cropRect);
-//	cvCopy(img, cropImg, NULL); // Copies only crop region
-//	cvResetImageROI(img);
-	
-	cv::Moments mu = cv::moments(roi, false);
-	if(mu.m00 > 0)
-	{
-		int cx = mu.m10/mu.m00;
-		int cy = mu.m01/mu.m00;
+    Mat roi = bgr_mask(rect);
+    
+    if(m_show_images)
+    {
+        cv::imshow("Fin Mask", roi);
+        cv::waitKey(3);
+    }
+    
+    //Get the moments of the mask to get general direction of the line
+    cv::Moments mu = cv::moments(roi, false);
+    if(mu.m00 > 0)
+    {
+        int cx = mu.m10/mu.m00;
+        int cy = mu.m01/mu.m00;
 
-		cv::circle(cv_ptr->image, cv::Point(cx + (int)cv_ptr->image.size().width/4,cy), 10,  CV_RGB(255,0,0), 4);
-		//cv::imshow("Window", cv_ptr->image);
-		//cv::imshow("Window", cv_ptr->image);
-		//cv::waitKey(3);
-	}
-	else
-	{
+        cv::circle(cv_ptr->image, cv::Point(cx + (int)cv_ptr->image.size().width/4,cy), 10,  CV_RGB(255,0,0), 4);
+        
+        cx = m_prev_cx*0.5 + cx;
+        m_prev_cx = cx;
+
+        err.data = (1.0/process_scale)*(cx - cv_ptr->image.size().width/2);
+        err_pub.publish(err);
+        line_visible.data = true;
+        line_visible_pub.publish(line_visible);
+    }
+    else
+    {
         //no moment found
-	}
-    //double end_sec =ros::Time::now().toSec();
-    //std::cout << "time: " << end_sec - start_sec << " sec\n";
+        err.data = -1000.0;
+        err_pub.publish(err);
+        line_visible.data = false;
+        line_visible_pub.publish(line_visible);
+    }
+    if(m_show_images)
+    {
+        cv::imshow("Fin Img", cv_ptr->image);
+        cv::waitKey(3);
+    }
+//    double end_sec =ros::Time::now().toSec();
+   // ROS_INFO_THROTTLE(5, "Time Taken: %lf sec", end_sec - start_sec);
+//    std::cout << end_sec - start_sec << std::endl;
+
 }
 
 int main(int argc, char** argv) {
-    
+
     ros::init(argc, argv, "processImageNode");
 
     ros::NodeHandle nodeh;
 
-    //create a gui window:
-    LineErrorCalculator lineErrorCalculator;
-//    ros::Publisher test_pub = nodeh.advertise<std_msgs::String>("/chatter", 1);
-    ros::Subscriber img_sub = nodeh.subscribe("/raspicam_node/image_raw", 1, &LineErrorCalculator::imgCallback, &lineErrorCalculator);
-    
-	ros::spin();
-    return 0;
+    ImageInfoExtractor imageInfoExtractor;
 
+    nodeh.param("/processImage/b_lower", imageInfoExtractor.bgr_color_lower[0], 0);
+    nodeh.param("/processImage/g_lower", imageInfoExtractor.bgr_color_lower[1], 120);
+    nodeh.param("/processImage/r_lower", imageInfoExtractor.bgr_color_lower[2], 120);
+    nodeh.param("/processImage/b_upper", imageInfoExtractor.bgr_color_upper[0], 255);
+    nodeh.param("/processImage/g_upper", imageInfoExtractor.bgr_color_upper[1], 255);
+    nodeh.param("/processImage/r_upper", imageInfoExtractor.bgr_color_upper[2], 255);
+    
+    nodeh.param("/processImage/h_lower", imageInfoExtractor.hsv_color_lower[0], 20);
+    nodeh.param("/processImage/s_lower", imageInfoExtractor.hsv_color_lower[1], 220);
+    nodeh.param("/processImage/v_lower", imageInfoExtractor.hsv_color_lower[2], 0);
+    nodeh.param("/processImage/h_upper", imageInfoExtractor.hsv_color_upper[0], 30);
+    nodeh.param("/processImage/s_upper", imageInfoExtractor.hsv_color_upper[1], 255);
+    nodeh.param("/processImage/v_upper", imageInfoExtractor.hsv_color_upper[2], 255);
+    
+    nodeh.param("/processImage/process_scale", imageInfoExtractor.process_scale, 0.25f);
+
+    ROS_INFO("process scale: %f", imageInfoExtractor.process_scale);
+
+    //std::string s;
+    //n.param<std::string>("my_param", s, "default_value");
+    
+    bool show_images;
+    nodeh.param("/processImage/show_images", imageInfoExtractor.m_show_images, false);
+    ROS_INFO("Show Images: %d\n", (imageInfoExtractor.m_show_images));
+
+    bool check_intersections;
+    nodeh.param("/processImage/check_intersections", imageInfoExtractor.check_intersections, true);
+
+
+    imageInfoExtractor.err_pub = nodeh.advertise<std_msgs::Float32>("/line_error", 1);
+    imageInfoExtractor.line_visible_pub = nodeh.advertise<std_msgs::Bool>("/line_visible", 1);
+    ros::Subscriber img_sub = nodeh.subscribe("/raspicam_node/image_raw", 1, &ImageInfoExtractor::imgCallback, &imageInfoExtractor);
+
+    ros::spin();
+    return 0;
 }
