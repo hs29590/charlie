@@ -38,7 +38,7 @@ class ImageInfoExtractor
         {
         }
 
-        int m_prev_cx;
+        float m_prev_cx;
         bool m_show_images;
         Mat kernel;
         
@@ -143,16 +143,17 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
     cv::Moments mu = cv::moments(roi, false);
     if(mu.m00 > 0)
     {
-        int cx = mu.m10/mu.m00;
-        int cy = mu.m01/mu.m00;
+        float cx = (float)mu.m10/mu.m00;
+        float cy = (float)mu.m01/mu.m00;
 
-        cv::circle(cv_ptr->image, cv::Point(cx + (int)cv_ptr->image.size().width/4,cy), 10,  CV_RGB(255,0,0), 4);
+        cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(255,0,0), 4);
         
         cx = m_prev_cx*0.5 + cx;
         m_prev_cx = cx;
 
-        err.data = (1.0/process_scale)*(cx - cv_ptr->image.size().width/2);
+        err.data = (cx - (float)(cv_ptr->image.size().width)/2.0);
         err_pub.publish(err);
+        std::cout << "Charlie: " << err.data << std::endl;
         line_visible.data = true;
         line_visible_pub.publish(line_visible);
     }
