@@ -21,6 +21,7 @@ from subprocess import call
 from Tkinter import *
 import ttk
 import tkMessageBox
+import threading
 
 class DriveCreate2:
 
@@ -29,7 +30,7 @@ class DriveCreate2:
     self.timeOfLastActivity = rospy.Time.now();
     self.isAsleep = False;
 
-    self.LINEAR_SPEED = 0.3;
+    self.LINEAR_SPEED = 0.05;
    
     self.state = "Stop"
     
@@ -145,6 +146,8 @@ class DriveCreate2:
     self.noLineCount = 0;
     self.intersectionVisibleCount = 0;
     
+    self.line_err = -1000.0;
+    self.intersection_err = -1000.0;
 
     self.STOP_TONE = 2;
     self.FOLLOW_TONE = 5;
@@ -158,10 +161,17 @@ class DriveCreate2:
     self.err_sub = rospy.Subscriber('line_error', Float32, self.errCallback)
     self.odom_sub = rospy.Subscriber('iRobot_0/odom', Odometry, self.odomCallback)
     self.sonar_sub = rospy.Subscriber('sonar_drive', Bool, self.sonarCallback);
-    self.intersection_sub = rospy.Subscriber('intersection_visible', Bool, self.intersectionCallback); 
+    self.intersection_sub = rospy.Subscriber('/intersection_err', Float32, self.intersectionCallback); 
    
     self.timeOfLastActivity = rospy.Time.now();
 
+    self.runThread = threading.Thread(target=self.runThreadFunc)
+    self.runThread.daemon = True
+    
+    time.sleep(3);
+
+    self.command_turn(math.pi)
+    print("Turn initial");
   def srcNodeChanged(self, *args):
       print('src node changed' + self.srcNode.get());
       self.pathPlanner.setStartNode(self.srcNode.get());
@@ -250,6 +260,8 @@ class DriveCreate2:
       self.lineLabel.update_idletasks();
       self.oiModeLabel.update_idletasks();
       self.sonarLabel.update_idletasks();
+      self.intersectionLabel.update_idletasks();
+      self.intersectionVisible.set("Intersection: " + str(self.intersection_err));
 
       self.root.update_idletasks();
 
@@ -263,15 +275,11 @@ class DriveCreate2:
       self.root.after(200, self.updateLabel);
  
   def intersectionCallback(self, msg):
-      self.intersectionVisible.set("Intersection: " + str(msg.data));
-      if(msg.data):
-        #rospy.loginfo("Inside Intersection Visible");
-        self.state == "AtIntersection";
-        self.intersectionVisibleCount = self.intersectionVisibleCount + 1;
-      else:
-        self.intersectionVisibleCount = 0;
-        self.state == "FollowLine";
-  
+      self.intersection_err = msg.data;
+
+  def errCallback(self,err):
+    self.line_err = err.data;
+
   def lineVisibleCallback(self,msg):
       self.lineVisible.set("Line: " + str(msg.data));
       self.line_drive = msg.data;
@@ -311,6 +319,7 @@ class DriveCreate2:
           desired = desired + 2*math.pi;
       
       current = starting;
+      rospy.loginfo("Starting Turning: " + str(current) + " " + str(desired));
 
       if(desired > starting):
           t_end = time.time() + 30;
@@ -318,9 +327,11 @@ class DriveCreate2:
               self.smooth_drive(0.0,0.5);
               time.sleep(0.01);
               current = self.yaw;
-              rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
+              #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
+              rospy.loginfo("Turning: " + str(current) + " " + str(desired));
               if(current > desired or current < starting):
                   self.sendStopCmd();
+                  rospy.loginfo("Turn Successful!");
                   return True;
                   break;
               if(time.time() > t_end):
@@ -334,9 +345,11 @@ class DriveCreate2:
               self.smooth_drive(0.0,-0.5);
               time.sleep(0.001);
               current = self.yaw;
-              rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
+              #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
+              rospy.loginfo("Turning: " + str(current) + " " + str(desired));
               if(current < desired or current > starting):
                   self.sendStopCmd();
+                  rospy.loginfo("Turn Successful!");
                   return True;
                   break;
               if(time.time() > t_end):
@@ -363,58 +376,57 @@ class DriveCreate2:
     euler = tf.transformations.euler_from_quaternion(quaternion)
     self.yaw = euler[2]
 
-  def errCallback(self,err):
-    if(self.state == "FollowLine"):
-        if(err.data == -1000.0):
-            #I will come here when I'm asked to follow line, but I can't see the line. User is expected to press go button again.
-            #this is also done to stop the robot from following random things if it doesn't see the line
-            self.noLineCount = self.noLineCount + 1;
-            if(self.noLineCount >= 20):
-                rospy.loginfo_throttle(5,"Stopping since line isn't visible");
-                self.sendStopCmd();
-                self.state = "Stop";
-
-        elif not self.sonar_drive:
+  def runThreadFunc(self):
+      while not rospy.is_shutdown():
+      
+        if not self.sonar_drive:
+                  self.sendStopCmd();
+      
+        if (self.state != "FollowLine"):
+            continue;
+      
+        if(self.intersection_err == -1000.0 and self.line_err == -1000.0):
             self.sendStopCmd();
-
-        else:
-            self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/50.0));
-            self.noLineCount = 0;
             
-    if(self.intersectionVisibleCount > 10 and self.state != "Stop"):
-        self.sendStopCmd();
-        rospy.loginfo("[Intersection] Sent Stop cmd");
-        nextTurn = self.currentPath[self.currentPathIndex];
-        self.currentPathIndex = self.currentPathIndex + 1;
-        rospy.loginfo("Next Turn is: " + nextTurn); 
-        idxx = 0;
-        while(idxx < 10):
-            self.smooth_drive(self.LINEAR_SPEED, 0.0);
-            time.sleep(0.1);
-            idxx = idxx + 1;
-        self.sendStopCmd();
-        if(nextTurn == 'E'):
-            rospy.loginfo("Stopping at end");
-            self.state = "Stop";
-        elif(nextTurn == 'L'):
-            self.state = "Turn";
-            rospy.loginfo("Turning Left");
-            self.command_turn(-math.pi/2);
-            self.state = "FollowLine"
-        elif(nextTurn == 'R'):
-            #self.smooth_drive(self.LINEAR_SPEED, (-float(err.data + 10)/50.0));
-            rospy.loginfo("Turning Right");
-            self.state = "Turn";
-            self.command_turn(math.pi/2);
-            self.state = "FollowLine"
-        elif(nextTurn == 'S'):
-            rospy.loginfo("Going Straight");
-            #self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/50.0));
+        elif(self.intersection_err != -1000.0):
+            while(self.intersection_err != -1000.0):
+                self.smooth_drive(self.LINEAR_SPEED, (-float(self.intersection_err)/50.0));
+            self.sendStopCmd();
+            rospy.loginfo("[Intersection] Sent Stop cmd");
+            nextTurn = self.currentPath[self.currentPathIndex];
+            self.currentPathIndex = self.currentPathIndex + 1;
+            rospy.loginfo("Next Turn is: " + nextTurn); 
+            self.sendStopCmd();
+            if(nextTurn == 'E'):
+                rospy.loginfo("Stopping at end");
+                self.state = "Stop";
+            elif(nextTurn == 'L'):
+                self.state = "Turn";
+                rospy.loginfo("Turning Left");
+                self.command_turn(-math.pi/2);
+                self.state = "FollowLine"
+            elif(nextTurn == 'R'):
+                rospy.loginfo("Turning Right");
+                self.state = "Turn";
+                self.command_turn(math.pi/2);
+                self.state = "FollowLine"
+            elif(nextTurn == 'S'):
+                rospy.loginfo("Going Straight");
+            
+        elif(self.line_err != -1000.0):
+            self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/50.0));
+            
+                  
+      print("Thread exited cleanly");
 
+      
+    
 def main(args):
   rospy.init_node('create_eyes_controller', anonymous=True)
   ic = DriveCreate2()
+  ic.runThread.start();
   ic.root.mainloop();
+#  ic.runThread.join();
   #rospy.spin is just a blocking call, which my guy above does as well.
 #  rospy.spin();
         

@@ -31,7 +31,14 @@ class ImageInfoExtractor
             
             process_scale = 0.25;
 
+            num_white_px = 0;
+
             err.data = -1000.0;
+            intersection_err.data = -1000.0;
+
+            intersection_seen_count = 0;
+
+            cx = cy = 0.0;
         }
 
         ~ImageInfoExtractor()
@@ -50,13 +57,22 @@ class ImageInfoExtractor
 
         ros::Publisher err_pub;
         ros::Publisher line_visible_pub;
+        ros::Publisher intersection_err_pub;
 
         float process_scale;
 
         std_msgs::Float32 err;
+        std_msgs::Float32 intersection_err;
         std_msgs::Bool line_visible;
 
+        float cx;
+        float cy;
+
         bool check_intersections;
+        int intersection_seen_count;
+        int num_white_px;
+
+
         void imgCallback(const sensor_msgs::ImageConstPtr& msg);
 
 };
@@ -141,7 +157,6 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
     
     //Get the moments of the mask to get general direction of the line
     cv::Moments mu = cv::moments(roi, false);
-    float cx = 0.0, cy = 0.0;
     if(mu.m00 > 0)
     {
         cx = (float)mu.m10/mu.m00;
@@ -173,16 +188,19 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
     if(check_intersections)
     {
         //checks red intersections
-        cv::inRange(hsvImg, cv::Scalar(170,0,0), 
-                cv::Scalar(180,255,255),
-                hsv_mask);
-
-        cv::inRange(hsvImg, cv::Scalar(0,0,0),
-                cv::Scalar(10,255,255),
-                bgr_mask);
         try
         {
+            cv::inRange(hsvImg, cv::Scalar(170,0,0), 
+                    cv::Scalar(180,255,255),
+                    hsv_mask);
+
+            cv::inRange(hsvImg, cv::Scalar(0,0,0),
+                    cv::Scalar(10,255,255),
+                    bgr_mask);
+
             cv::bitwise_or(bgr_mask, hsv_mask, bgr_mask);
+
+            cv::erode(bgr_mask,bgr_mask,kernel);
         }
         catch (cv::Exception& e)
         {
@@ -190,13 +208,44 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
             return;
         }
         //bgr_mask contains the intersections
-        cv::erode(bgr_mask,bgr_mask,kernel);
+
         if(m_show_images)
         {
             cv::imshow("intersection mask", bgr_mask);
             cv::waitKey(3);
         }
 
+        num_white_px = cv::countNonZero(bgr_mask);
+        if(num_white_px > 60)
+        {
+            intersection_seen_count++;
+        }
+        else
+        {
+            intersection_seen_count = 0;
+        }
+
+        if(intersection_seen_count > 5)
+        {
+            cv::Moments mu = cv::moments(bgr_mask, false);
+            if(mu.m00 > 0)
+            {
+                cx = (float)mu.m10/mu.m00;
+                cy = (float)mu.m01/mu.m00;
+
+                intersection_err.data = (cx - (float)(cv_ptr->image.size().width)/2.0);
+                intersection_err_pub.publish(intersection_err);
+            }
+            else
+            {
+                ROS_ERROR("No Moment found while calculating moment for intersection..");
+            }
+        }
+        else
+        {
+            intersection_err.data = -1000.0;
+            intersection_err_pub.publish(intersection_err);
+        }
     }
     //double end_sec =ros::Time::now().toSec();
     //ROS_INFO_THROTTLE(5, "Time Taken: %lf sec", end_sec - start_sec);
@@ -242,6 +291,7 @@ int main(int argc, char** argv) {
 
     imageInfoExtractor.err_pub = nodeh.advertise<std_msgs::Float32>("/line_error", 1);
     imageInfoExtractor.line_visible_pub = nodeh.advertise<std_msgs::Bool>("/line_visible", 1);
+    imageInfoExtractor.intersection_err_pub = nodeh.advertise<std_msgs::Float32>("/intersection_err", 1);
     ros::Subscriber img_sub = nodeh.subscribe("/raspicam_node/image_raw", 1, &ImageInfoExtractor::imgCallback, &imageInfoExtractor);
 
     ros::spin();
