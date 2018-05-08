@@ -30,7 +30,7 @@ class DriveCreate2:
     self.timeOfLastActivity = rospy.Time.now();
     self.isAsleep = False;
 
-    self.LINEAR_SPEED = 0.05;
+    self.LINEAR_SPEED = 0.8;
    
     self.state = "Stop"
     
@@ -78,11 +78,14 @@ class DriveCreate2:
     self.srcNode = StringVar();
     self.dstNode = StringVar();
 
-    srcChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'}
-    dstChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'}
+    srcChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G'}#, 'H', 'I', 'J', 'K', 'L'}
+    dstChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G'}#, 'H', 'I', 'J', 'K', 'L'}
 
-    self.srcNode.set(' ');
-    self.dstNode.set(' ');
+    self.srcNode.set('A');
+    self.dstNode.set('G');
+    
+    self.pathPlanner.setStartNode(self.srcNode.get());
+    self.pathPlanner.setEndNode(self.dstNode.get());
 
     #GUI Text
     self.batteryLabel = ttk.Label(self.mainframe, textvariable=self.batteryStatus, font=('Helvetica',12));
@@ -167,11 +170,8 @@ class DriveCreate2:
 
     self.runThread = threading.Thread(target=self.runThreadFunc)
     self.runThread.daemon = True
+      
     
-    time.sleep(3);
-
-    self.command_turn(math.pi)
-    print("Turn initial");
   def srcNodeChanged(self, *args):
       print('src node changed' + self.srcNode.get());
       self.pathPlanner.setStartNode(self.srcNode.get());

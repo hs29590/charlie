@@ -1,9 +1,31 @@
 <?xml version="1.0"?>
 <launch>
-    <node name="processImage" pkg="charlie" type="processImage.py" output="screen" clear_params="true">
+    <!--<node name="processImage" pkg="charlie" type="processImage.py" output="screen" clear_params="true">
         <param name="loop_rate" value="200" />
         <param name="show_images" value="False" />
         <param name="use_pid" value="False" />
+    </node>-->
+    <node name="processImage" pkg="charlie" type="processImage" output="screen" clear_params="true">
+        <param name="process_scale" value="0.25" />
+        <param name="show_images" value="False" />
+        <param name="check_intersections" value="True" />
+        <param name="use_pid" value="False" />
+
+        <param name="b_lower" value="0" />
+        <param name="g_lower" value="70" />
+        <param name="r_lower" value="70" />
+
+        <param name="b_upper" value="65" />
+        <param name="g_upper" value="255" />
+        <param name="r_upper" value="255" />
+
+        <param name="h_lower" value="20" />
+        <param name="s_lower" value="220" />
+        <param name="v_lower" value="0" />
+
+        <param name="h_upper" value="30" />
+        <param name="s_upper" value="255" />
+        <param name="v_upper" value="255" />
     </node>
     
     <node name="controller" pkg="charlie" type="controller_with_gui.py" output="screen" clear_params="true">
@@ -61,7 +83,6 @@
     <param name="publish_name_" value="$(arg publish_name)"/>
     <param name="publishTf" value="true"/>
   </node>
-
 
 </launch>
 
