@@ -216,7 +216,7 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         }
 
         num_white_px = cv::countNonZero(bgr_mask);
-        if(num_white_px > 10)
+        if(num_white_px > 30)
         {
             intersection_seen_count++;
         }

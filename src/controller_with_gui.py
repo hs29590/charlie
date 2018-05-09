@@ -408,21 +408,34 @@ class DriveCreate2:
                 rospy.loginfo("Stopping at end");
                 self.state = "Stop";
             elif(nextTurn == 'L'):
-                self.state = "Turn";
                 rospy.loginfo("Turning Left");
-                if(self.command_turn(math.pi/2)):
-                    self.state = "FollowLine";
-                else:
-                    self.state = "Error, Turn not successfull";
+                for stpCnter in range(50):
+                    self.smooth_drive(self.LINEAR_SPEED, 0.0);
+                    time.sleep(0.01);
+                for stpCnter in range(100):
+                    self.smooth_drive(self.LINEAR_SPEED, 0.5);
+                    time.sleep(0.03);
+                #self.state = "Turn";
+                #if(self.command_turn(math.pi/2)):
+                self.state = "FollowLine";
+                #else:
+                #self.state = "Error, Turn not successfull";
             elif(nextTurn == 'R'):
                 rospy.loginfo("Turning Right");
-                self.state = "Turn";
-                if(self.command_turn(-math.pi/2)):
-                    self.state = "FollowLine";
-                else:
-                    self.state = "Error, Turn not successfull";
+                for stpCnter in range(50):
+                    self.smooth_drive(self.LINEAR_SPEED, 0.0);
+                    time.sleep(0.01);
+                for stpCnter in range(100):
+                    self.smooth_drive(self.LINEAR_SPEED, -0.5);
+                    time.sleep(0.03);
+# for stpCnter in range(0,10):
+#                    self.smooth_drive(self.LINEAR_SPEED, -0.1);
+                #self.state = "Turn";
+                #if(self.command_turn(-math.pi/2)):
+                self.state = "FollowLine";
+                #else:
+                #self.state = "Error, Turn not successfull";
                 rospy.loginfo("I Turned Right");
-                self.state = "FollowLine"
             elif(nextTurn == 'S'):
                 rospy.loginfo("Going Straight");
             
