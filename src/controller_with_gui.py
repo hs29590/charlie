@@ -414,7 +414,10 @@ class DriveCreate2:
                     time.sleep(0.01);
                 for stpCnter in range(100):
                     self.smooth_drive(self.LINEAR_SPEED, 0.5);
-                    time.sleep(0.03);
+                    time.sleep(0.02);
+                while(abs(self.line_err) > 10):
+                    self.smooth_drive(self.LINEAR_SPEED, 0.5);
+                    time.sleep(0.02);
                 #self.state = "Turn";
                 #if(self.command_turn(math.pi/2)):
                 self.state = "FollowLine";
@@ -427,7 +430,11 @@ class DriveCreate2:
                     time.sleep(0.01);
                 for stpCnter in range(100):
                     self.smooth_drive(self.LINEAR_SPEED, -0.5);
-                    time.sleep(0.03);
+                    time.sleep(0.02);
+                while(abs(self.line_err) > 10):
+                    self.smooth_drive(self.LINEAR_SPEED, -0.5);
+                    time.sleep(0.02);
+
 # for stpCnter in range(0,10):
 #                    self.smooth_drive(self.LINEAR_SPEED, -0.1);
                 #self.state = "Turn";
