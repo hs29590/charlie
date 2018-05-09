@@ -216,7 +216,7 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         }
 
         num_white_px = cv::countNonZero(bgr_mask);
-        if(num_white_px > 60)
+        if(num_white_px > 10)
         {
             intersection_seen_count++;
         }
@@ -233,12 +233,14 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
                 cx = (float)mu.m10/mu.m00;
                 cy = (float)mu.m01/mu.m00;
 
-                intersection_err.data = (cx - (float)(cv_ptr->image.size().width)/2.0);
+                intersection_err.data = ((cx - (float)(cv_ptr->image.size().width)/2.0));
                 intersection_err_pub.publish(intersection_err);
             }
             else
             {
-                ROS_ERROR("No Moment found while calculating moment for intersection..");
+            //    ROS_ERROR("No Moment found while calculating moment for intersection..");
+            intersection_err.data = -1000.0;
+            intersection_err_pub.publish(intersection_err);
             }
         }
         else

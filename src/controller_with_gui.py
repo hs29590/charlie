@@ -30,7 +30,7 @@ class DriveCreate2:
     self.timeOfLastActivity = rospy.Time.now();
     self.isAsleep = False;
 
-    self.LINEAR_SPEED = 0.8;
+    self.LINEAR_SPEED = 0.1;
    
     self.state = "Stop"
     
@@ -206,7 +206,6 @@ class DriveCreate2:
 
       self.currentPath = self.pathPlanner.getLeftRightTurnList();
       self.currentPathIndex = 1;
-
       print(self.pathPlanner.getLeftRightTurnList()); 
       print(self.pathPlanner.getNodeList()); 
 
@@ -225,6 +224,11 @@ class DriveCreate2:
               self.state = "FollowLine";
           else:
               self.state = "Error, Turn not successfull";
+      
+      self.currentPath = self.pathPlanner.getLeftRightTurnList();
+      self.currentPathIndex = 1;
+      print(self.pathPlanner.getLeftRightTurnList()); 
+      print(self.pathPlanner.getNodeList()); 
               
   def Stop(self):
       self.timeOfLastActivity = rospy.Time.now();
@@ -403,12 +407,14 @@ class DriveCreate2:
             elif(nextTurn == 'L'):
                 self.state = "Turn";
                 rospy.loginfo("Turning Left");
-                self.command_turn(-math.pi/2);
+                self.command_turn(math.pi/2);
+                rospy.loginfo("I Turned left");
                 self.state = "FollowLine"
             elif(nextTurn == 'R'):
                 rospy.loginfo("Turning Right");
                 self.state = "Turn";
-                self.command_turn(math.pi/2);
+                self.command_turn(-math.pi/2);
+                rospy.loginfo("I Turned Right");
                 self.state = "FollowLine"
             elif(nextTurn == 'S'):
                 rospy.loginfo("Going Straight");
