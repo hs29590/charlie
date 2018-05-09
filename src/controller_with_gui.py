@@ -225,6 +225,8 @@ class DriveCreate2:
           else:
               self.state = "Error, Turn not successfull";
       
+      self.pathPlanner.calculatePath();
+      print("Path returned with length: ");
       self.currentPath = self.pathPlanner.getLeftRightTurnList();
       self.currentPathIndex = 1;
       print(self.pathPlanner.getLeftRightTurnList()); 
@@ -323,7 +325,7 @@ class DriveCreate2:
           desired = desired + 2*math.pi;
       
       current = starting;
-      rospy.loginfo("Starting Turning: " + str(current) + " " + str(desired));
+      rospy.loginfo("Starting Turning: Current(Starting):" + str(current) + " Desired:" + str(desired));
 
       if(desired > starting):
           t_end = time.time() + 30;
@@ -332,7 +334,7 @@ class DriveCreate2:
               time.sleep(0.01);
               current = self.yaw;
               #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
-              rospy.loginfo("Turning: " + str(current) + " " + str(desired));
+              rospy.loginfo("des > sta - Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
               if(current > desired or current < starting):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
@@ -350,7 +352,7 @@ class DriveCreate2:
               time.sleep(0.001);
               current = self.yaw;
               #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
-              rospy.loginfo("Turning: " + str(current) + " " + str(desired));
+              rospy.loginfo("des < sta Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
               if(current < desired or current > starting):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
@@ -382,7 +384,8 @@ class DriveCreate2:
 
   def runThreadFunc(self):
       while not rospy.is_shutdown():
-      
+        time.sleep(0.02);
+
         if not self.sonar_drive:
                   self.sendStopCmd();
       
@@ -407,13 +410,17 @@ class DriveCreate2:
             elif(nextTurn == 'L'):
                 self.state = "Turn";
                 rospy.loginfo("Turning Left");
-                self.command_turn(math.pi/2);
-                rospy.loginfo("I Turned left");
-                self.state = "FollowLine"
+                if(self.command_turn(math.pi/2)):
+                    self.state = "FollowLine";
+                else:
+                    self.state = "Error, Turn not successfull";
             elif(nextTurn == 'R'):
                 rospy.loginfo("Turning Right");
                 self.state = "Turn";
-                self.command_turn(-math.pi/2);
+                if(self.command_turn(-math.pi/2)):
+                    self.state = "FollowLine";
+                else:
+                    self.state = "Error, Turn not successfull";
                 rospy.loginfo("I Turned Right");
                 self.state = "FollowLine"
             elif(nextTurn == 'S'):
@@ -422,11 +429,8 @@ class DriveCreate2:
         elif(self.line_err != -1000.0):
             self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/50.0));
             
-                  
       print("Thread exited cleanly");
 
-      
-    
 def main(args):
   rospy.init_node('create_eyes_controller', anonymous=True)
   ic = DriveCreate2()
