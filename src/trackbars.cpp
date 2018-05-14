@@ -20,9 +20,15 @@
 #include <iostream>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
-#include <chrono>
 #include <iostream>
-using namespace std::chrono;
+#include <ros/ros.h>
+#include <std_msgs/String.h>
+#include <std_msgs/Float32.h>
+#include <std_msgs/Bool.h>
+#include <sensor_msgs/Image.h>
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
 using namespace std;
 using namespace cv;
 //initial min and max HSV filter values.
@@ -178,37 +184,28 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed){
 		}else putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
 	}
 }
-int main(int argc, char* argv[])
+void imgCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-	//some boolean variables for different functionality within this
-	//program
     bool trackObjects = true;
     bool useMorphOps = true;
-	//Matrix to store each frame of the webcam feed
-	Mat cameraFeed;
-	//matrix storage for HSV image
+
 	Mat HSV;
-	//matrix storage for binary threshold image
 	Mat threshold;
-	//x and y values for the location of the object
 	int x=0, y=0;
-	//create slider bars for HSV filtering
-	createTrackbars();
-	//video capture object to acquire webcam feed
-	VideoCapture capture;
-	//open capture object at location zero (default location for webcam)
-	capture.open(0);
-	//set height and width of capture frame
-	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
-	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
-	//start an infinite loop where webcam feed is copied to cameraFeed matrix
-	//all of our operations will be performed within this loop
-    int count = 0;
-	while(1)
+
+    cv_bridge::CvImagePtr cv_ptr;
+    try
     {
-        high_resolution_clock::time_point t1 = high_resolution_clock::now();
-		//store image to matrix
-		capture.read(cameraFeed);
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+    Mat cameraFeed = cv_ptr->image;
+
+        //capture.read(cameraFeed);
 		//convert frame from BGR to HSV colorspace
 		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 		//filter HSV image between values and store filtered image to
@@ -233,6 +230,41 @@ int main(int argc, char* argv[])
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
 		waitKey(30);
+}
+int main(int argc, char* argv[])
+{
+	//some boolean variables for different functionality within this
+	//program
+	//Matrix to store each frame of the webcam feed
+	
+	//matrix storage for HSV image
+
+	//matrix storage for binary threshold image
+	//x and y values for the location of the object
+	
+	//create slider bars for HSV filtering
+	createTrackbars();
+	//video capture object to acquire webcam feed
+	//VideoCapture capture;
+	//open capture object at location zero (default location for webcam)
+	//capture.open(0);
+	//set height and width of capture frame
+	//capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
+	//capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
+	//start an infinite loop where webcam feed is copied to cameraFeed matrix
+	//all of our operations will be performed within this loop
+    int count = 0;
+    
+    ros::init(argc, argv, "trackBars");
+
+    ros::NodeHandle nodeh;
+    ROS_INFO("Hello from trackbar!");
+    ros::Subscriber img_sub = nodeh.subscribe("/raspicam_node/image_raw", 1, imgCallback);
+	/*while(1)
+    {
+        high_resolution_clock::time_point t1 = high_resolution_clock::now();
+		//store image to matrix
+		
         high_resolution_clock::time_point t2 = high_resolution_clock::now();
 
           duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
@@ -243,13 +275,10 @@ int main(int argc, char* argv[])
             std::cout << "It took me " << time_span.count()/100.0 << " seconds." << std::endl;
             count = 0;
           }
-	}
+	}*/
 
-
-
-
-
-
-	return 0;
+    
+    ros::spin();
+    return 0;
 }
 

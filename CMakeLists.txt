@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(charlie)
 
+
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -143,6 +144,10 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 add_executable(processImage_exe src/processImage.cpp)
 SET_TARGET_PROPERTIES(processImage_exe PROPERTIES OUTPUT_NAME processImage)
 target_link_libraries(processImage_exe ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+
+add_executable(trackbars_exe src/trackbars.cpp)
+SET_TARGET_PROPERTIES(trackbars_exe PROPERTIES OUTPUT_NAME trackbars)
+target_link_libraries(trackbars_exe ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 
 #add_executable(lineTracker_exe src/lineTracker.cpp)
