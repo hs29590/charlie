@@ -27,9 +27,10 @@
 
     </node>
     
-    <node name="controller" pkg="charlie" type="controller_with_gui.py" output="screen" clear_params="true">
+ <!--   <node name="controller" pkg="charlie" type="controller_with_gui.py" output="screen" clear_params="true">
         <param name="publishedMqttTopic_navdata" value="/mqtt/navdata"/>
     </node>
+    -->
 
    <!-- <node name="sonarPublisher" pkg="charlie" type="sonarNode.py" output="screen" clear_params="true">
         <param name="sampleParam" value="none" />
@@ -59,8 +60,9 @@
   -->
 
   <!-- iRobotCreate2 -->
-
-  <node pkg="rosbag" type="play" name="player" output="screen" args="--clock /home/harshit/catkin_ws/src/create_eyes/logs/intersections/red_intersections.bag -q -r 0.3"/>
+<!--
+  <node pkg="rosbag" type="play" name="player" output="screen" args="clock /home/harshit/catkin_ws/src/create_eyes/logs/intersections/red_intersections.bag -q -r 0.3"/>
+  -->
 
 
   <arg name="id" default="0"/>

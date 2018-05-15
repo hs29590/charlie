@@ -30,8 +30,7 @@ class DriveCreate2:
     self.timeOfLastActivity = rospy.Time.now();
     self.isAsleep = False;
 
-    self.LINEAR_SPEED = 0.1;
-   
+    self.LINEAR_SPEED = 0.8;   
     self.state = "Stop"
     
     #Publishers

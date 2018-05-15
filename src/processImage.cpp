@@ -33,13 +33,19 @@ class ImageInfoExtractor
 
             num_white_px = 0;
 
+            //min_object_area = 10*10;
             err.data = -1000.0;
             intersection_err.data = -1000.0;
 
+            no_intersection_count = 0;
             intersection_seen_count = 0;
 
+            no_line_count = 0;
             cx = cy = 0.0;
+            erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
+            dilateElement = getStructuringElement( MORPH_RECT,Size(6,6));
         }
+
 
         ~ImageInfoExtractor()
         {
@@ -70,8 +76,16 @@ class ImageInfoExtractor
 
         bool check_intersections;
         int intersection_seen_count;
+        int no_intersection_count;
         int num_white_px;
+        int no_line_count;
 
+        Mat hsv_mask;
+        Mat hsvImg;
+        Mat bgr_mask;
+	    Mat erodeElement;
+        //dilate with larger element so make sure object is nicely visible
+    	Mat dilateElement;
 
         void imgCallback(const sensor_msgs::ImageConstPtr& msg);
 
@@ -93,7 +107,6 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
 
     cv::resize(cv_ptr->image, cv_ptr->image, cv::Size(), process_scale, process_scale);
 
-    Mat hsvImg;
     try
     {
         cv::cvtColor(cv_ptr->image, hsvImg, cv::COLOR_BGR2HSV);
@@ -104,10 +117,13 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         return;
     }
 
-    Mat hsv_mask = Mat::zeros(cv_ptr->image.size(), cv_ptr->image.type());
+    hsv_mask = Mat::zeros(cv_ptr->image.size(), cv_ptr->image.type());
     cv::inRange(hsvImg, cv::Scalar(hsv_color_lower[0], hsv_color_lower[1], hsv_color_lower[2]), 
                         cv::Scalar(hsv_color_upper[0], hsv_color_upper[1], hsv_color_upper[2]),
                         hsv_mask);
+    
+    //cv::erode(hsv_mask,hsv_mask,kernel);
+    cv::GaussianBlur( hsv_mask, hsv_mask, cv::Size( 5, 5 ), 0, 0 );
 
     if(m_show_images)
     {
@@ -115,7 +131,7 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         cv::waitKey(3);
     }
     
-    Mat bgr_mask = Mat::zeros(cv_ptr->image.size(), cv_ptr->image.type());
+    bgr_mask = Mat::zeros(cv_ptr->image.size(), cv_ptr->image.type());
     cv::inRange(cv_ptr->image, cv::Scalar(bgr_color_lower[0], bgr_color_lower[1], bgr_color_lower[2]), 
                                cv::Scalar(bgr_color_upper[0], bgr_color_upper[1], bgr_color_upper[2]), 
                                bgr_mask);
@@ -136,10 +152,16 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         return;
     }
 
-    cv::GaussianBlur( bgr_mask, bgr_mask, cv::Size( 5, 5 ), 0, 0 );
+	erode(bgr_mask,bgr_mask,erodeElement);
+	erode(bgr_mask,bgr_mask,erodeElement);
+
+	dilate(bgr_mask,bgr_mask,dilateElement);
+	dilate(bgr_mask,bgr_mask,dilateElement);
+
+//    cv::GaussianBlur( bgr_mask, bgr_mask, cv::Size( 5, 5 ), 0, 0 );
 
     // Apply erosion or dilation on the image
-    cv::erode(bgr_mask,bgr_mask,kernel);
+  //  cv::erode(bgr_mask,bgr_mask,kernel);
 
     cv::Rect rect((int)cv_ptr->image.size().width/4,
             0,
@@ -170,12 +192,15 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         err.data = (cx - (float)(cv_ptr->image.size().width)/2.0);
         err_pub.publish(err);
         line_visible.data = true;
+        no_line_count = 0;
         line_visible_pub.publish(line_visible);
     }
     else
     {
         //no moment found
-        err.data = -1000.0;
+        no_line_count++;
+        if(no_line_count > 5)
+            err.data = -1000.0;
         err_pub.publish(err);
         line_visible.data = false;
         line_visible_pub.publish(line_visible);
@@ -200,7 +225,12 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
 
             cv::bitwise_or(bgr_mask, hsv_mask, bgr_mask);
 
-            cv::erode(bgr_mask,bgr_mask,kernel);
+   //         cv::erode(bgr_mask,bgr_mask,kernel);
+        	erode(bgr_mask,bgr_mask,erodeElement);
+        	erode(bgr_mask,bgr_mask,erodeElement);
+
+        	dilate(bgr_mask,bgr_mask,dilateElement);
+        	dilate(bgr_mask,bgr_mask,dilateElement);
         }
         catch (cv::Exception& e)
         {
@@ -219,10 +249,12 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         if(num_white_px > 30)
         {
             intersection_seen_count++;
+            no_intersection_count = 0;
         }
         else
         {
             intersection_seen_count = 0;
+            no_intersection_count++;
         }
 
         if(intersection_seen_count > 5)
@@ -243,7 +275,7 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
             intersection_err_pub.publish(intersection_err);
             }
         }
-        else
+        else if(no_intersection_count >= 10)
         {
             intersection_err.data = -1000.0;
             intersection_err_pub.publish(intersection_err);
