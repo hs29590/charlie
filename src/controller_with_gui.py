@@ -42,7 +42,7 @@ class DriveCreate2:
     self.root = Tk()
     self.root.title("GUI")
     framew = 500;
-    frameh = 400;
+    frameh = 500;
     screenw = self.root.winfo_screenwidth();
     screenh = self.root.winfo_screenheight();
     posx = (screenw/2) - (framew/2);
@@ -77,14 +77,17 @@ class DriveCreate2:
     self.srcNode = StringVar();
     self.dstNode = StringVar();
 
-    srcChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G'}#, 'H', 'I', 'J', 'K', 'L'}
-    dstChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G'}#, 'H', 'I', 'J', 'K', 'L'}
+    self.sourceDestinationVar = StringVar();
+    self.sourceDestinationVar.set("Source:       Destination:   ");
 
-    self.srcNode.set('A');
-    self.dstNode.set('G');
+#    srcChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G'}#, 'H', 'I', 'J', 'K', 'L'}
+#    dstChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G'}#, 'H', 'I', 'J', 'K', 'L'}
+#
+    self.srcNode.set(' ');
+    self.dstNode.set(' ');
     
-    self.pathPlanner.setStartNode(self.srcNode.get());
-    self.pathPlanner.setEndNode(self.dstNode.get());
+#    self.pathPlanner.setStartNode(self.srcNode.get());
+#    self.pathPlanner.setEndNode(self.dstNode.get());
 
     #GUI Text
     self.batteryLabel = ttk.Label(self.mainframe, textvariable=self.batteryStatus, font=('Helvetica',12));
@@ -117,19 +120,24 @@ class DriveCreate2:
     ttk.Button(self.mainframe, text="Dock", style='my.TButton', command=self.dock, width = 16).grid(row=8,column=0, pady=15)
     ttk.Button(self.mainframe, text="Un-Dock", style='my.TButton', command=self.undock, width = 16).grid(row=8,column=1, pady=15)
 
-    ttk.Button(self.mainframe, text="Reset", style='my.TButton', command=self.resetPressed, width=16).grid(row=10, column=0, pady=5)
+    ttk.Button(self.mainframe, text="SOURCE", style='my.TButton', command=self.selectSource, width = 16).grid(row=13,column=0, pady=15)
+    ttk.Button(self.mainframe, text="DESTINATION", style='my.TButton', command=self.selectDestination, width = 16).grid(row=13,column=1, pady=15)
 
-    srcSelectMenu = OptionMenu(self.mainframe, self.srcNode, *srcChoices)
-    #Label(self.mainframe, text="Choose Process", font=("Helvetica", 14)).grid(row = 2, column=1, pady=(15,2))
-    srcSelectMenu.grid(row=11, column=1)
-    #srcSelectMenu.bind('<Button-1>', self.dropdownopen)
-    self.srcNode.trace('w', self.srcNodeChanged)
+    ttk.Button(self.mainframe, text="Reset", style='my.TButton', command=self.resetPressed, width=16).grid(row=10, column=0, pady=5)
     
-    dstSelectMenu = OptionMenu(self.mainframe, self.dstNode, *dstChoices)
-    #Label(self.mainframe, text="Choose Process", font=("Helvetica", 14)).grid(row = 2, column=1, pady=(15,2))
-    dstSelectMenu.grid(row=11, column=2)
-    #srcSelectMenu.bind('<Button-1>', self.dropdownopen)
-    self.dstNode.trace('w', self.dstNodeChanged)
+    self.sourceDestinationLabel = ttk.Label(self.mainframe, textvariable=self.sourceDestinationVar, font=('Helvetica',12));
+    self.sourceDestinationLabel.grid(row=14, column=0, columnspan=2);
+
+#    srcSelectMenu = OptionMenu(self.mainframe, self.srcNode, *srcChoices)
+#    #Label(self.mainframe, text="Choose Process", font=("Helvetica", 14)).grid(row = 2, column=1, pady=(15,2))
+#    srcSelectMenu.grid(row=11, column=1)
+#    #srcSelectMenu.bind('<Button-1>', self.dropdownopen)
+#    self.srcNode.trace('w', self.srcNodeChanged)
+    
+#    dstSelectMenu = OptionMenu(self.mainframe, self.dstNode, *dstChoices)
+#    dstSelectMenu.grid(row=11, column=2)
+#    #srcSelectMenu.bind('<Button-1>', self.dropdownopen)
+#    self.dstNode.trace('w', self.dstNodeChanged)
 
     self.root.after(1000, self.updateLabel);
 
@@ -167,17 +175,101 @@ class DriveCreate2:
    
     self.timeOfLastActivity = rospy.Time.now();
 
+    self.sourceSelected = '0';
+    self.destinationSelected = '0';
+
     self.runThread = threading.Thread(target=self.runThreadFunc)
     self.runThread.daemon = True
       
     
-  def srcNodeChanged(self, *args):
-      print('src node changed' + self.srcNode.get());
-      self.pathPlanner.setStartNode(self.srcNode.get());
-  
-  def dstNodeChanged(self, *args):
-      print('dst node changed' + self.dstNode.get());
-      self.pathPlanner.setEndNode(self.dstNode.get());
+
+  def dstpopup(self):
+
+    toplevel = Toplevel()
+    toplevel.geometry( "%dx%d+%d+%d" % (400,400,self.root.winfo_x() + 10 ,self.root.winfo_y() + 10))
+    def aButton():
+	self.destinationSelected = 'A';
+        self.pathPlanner.setEndNode(self.destinationSelected);
+        toplevel.destroy();
+    def bButton():
+	self.destinationSelected = 'B';
+        self.pathPlanner.setEndNode(self.destinationSelected);
+        toplevel.destroy();
+    def cButton():
+	self.destinationSelected = 'C';
+        self.pathPlanner.setEndNode(self.destinationSelected);
+        toplevel.destroy();
+    def dButton():
+        self.destinationSelected = 'D';
+        self.pathPlanner.setEndNode(self.destinationSelected);
+        toplevel.destroy();
+    def eButton():
+        self.destinationSelected = 'E';
+        self.pathPlanner.setEndNode(self.destinationSelected);
+        toplevel.destroy();
+    def fButton():
+        self.destinationSelected = 'F';
+        self.pathPlanner.setEndNode(self.destinationSelected);
+        toplevel.destroy();
+    def gButton():
+        self.destinationSelected = 'G';
+        self.pathPlanner.setEndNode(self.destinationSelected);
+        toplevel.destroy();
+
+    ttk.Button(toplevel, text="A", style='my.TButton', command=aButton).grid(column = 0, row = 0, padx = 10, pady = 10);
+    ttk.Button(toplevel, text="B", style='my.TButton', command=bButton).grid(column = 1, row = 0, padx = 10, pady = 10);
+    ttk.Button(toplevel, text="C", style='my.TButton', command=cButton).grid(column = 0, row = 1, padx = 10, pady = 10);
+    ttk.Button(toplevel, text="D", style='my.TButton', command=dButton).grid(column = 1, row = 1, padx = 10, pady = 10);
+    ttk.Button(toplevel, text="E", style='my.TButton', command=eButton).grid(column = 0, row = 2, padx = 10, pady = 10);
+    ttk.Button(toplevel, text="F", style='my.TButton', command=fButton).grid(column = 1, row = 2, padx = 10, pady = 10);
+    ttk.Button(toplevel, text="G", style='my.TButton', command=gButton).grid(column = 0, row = 3, padx = 10, pady = 10);
+
+  def srcpopup(self):
+
+    toplevel = Toplevel()
+    toplevel.geometry( "%dx%d+%d+%d" % (400,400,self.root.winfo_x() + 10 ,self.root.winfo_y() + 10))
+    def aButton():
+	self.sourceSelected = 'A';
+        self.pathPlanner.setStartNode(self.sourceSelected);
+        toplevel.destroy();
+    def bButton():
+	self.sourceSelected = 'B';
+        self.pathPlanner.setStartNode(self.sourceSelected);
+        toplevel.destroy();
+    def cButton():
+	self.sourceSelected = 'C';
+        self.pathPlanner.setStartNode(self.sourceSelected);
+        toplevel.destroy();
+    def dButton():
+        self.sourceSelected = 'D';
+        self.pathPlanner.setStartNode(self.sourceSelected);
+        toplevel.destroy();
+    def eButton():
+        self.sourceSelected = 'E';
+        self.pathPlanner.setStartNode(self.sourceSelected);
+        toplevel.destroy();
+    def fButton():
+        self.sourceSelected = 'F';
+        self.pathPlanner.setStartNode(self.sourceSelected);
+        toplevel.destroy();
+    def gButton():
+        self.sourceSelected = 'G';
+        self.pathPlanner.setStartNode(self.sourceSelected);
+        toplevel.destroy();
+
+    ttk.Button(toplevel, text="A", style='my.TButton', command=aButton).grid(column = 0, row = 0, padx = 10, pady = 10);
+    ttk.Button(toplevel, text="B", style='my.TButton', command=bButton).grid(column = 1, row = 0, padx = 10, pady = 10);
+    ttk.Button(toplevel, text="C", style='my.TButton', command=cButton).grid(column = 0, row = 1, padx = 10, pady = 10);
+    ttk.Button(toplevel, text="D", style='my.TButton', command=dButton).grid(column = 1, row = 1, padx = 10, pady = 10);
+    ttk.Button(toplevel, text="E", style='my.TButton', command=eButton).grid(column = 0, row = 2, padx = 10, pady = 10);
+    ttk.Button(toplevel, text="F", style='my.TButton', command=fButton).grid(column = 1, row = 2, padx = 10, pady = 10);
+    ttk.Button(toplevel, text="G", style='my.TButton', command=gButton).grid(column = 0, row = 3, padx = 10, pady = 10);
+
+  def selectSource(self, *args):
+      self.srcpopup();
+
+  def selectDestination(self, *args):
+      self.dstpopup();
 
   def resetPressed(self):
       self.timeOfLastActivity = rospy.Time.now();
@@ -192,6 +284,7 @@ class DriveCreate2:
       if(self.isAsleep):
           call(["rosservice", "call", "/raspicam_node/start_capture"]);
           self.isAsleep = False;
+          rospy.loginfo("Coming out of sleep");
 
       self.timeOfLastActivity = rospy.Time.now();
       if self.docked:
@@ -202,6 +295,8 @@ class DriveCreate2:
 
       self.pathPlanner.calculatePath();
       print("Path returned with length: ");
+      print("Source Selected: " + self.sourceSelected);
+      print("Destination Selected: " + self.destinationSelected);
 
       self.currentPath = self.pathPlanner.getLeftRightTurnList();
       self.currentPathIndex = 1;
@@ -212,6 +307,7 @@ class DriveCreate2:
       if(self.isAsleep):
           call(["rosservice", "call", "/raspicam_node/start_capture"]);
           self.isAsleep = False;
+          rospy.loginfo("Coming out of sleep");
 
       self.timeOfLastActivity = rospy.Time.now();
       if self.docked:
@@ -268,14 +364,19 @@ class DriveCreate2:
       self.intersectionLabel.update_idletasks();
       self.intersectionVisible.set("Intersection: " + str(self.intersection_err));
 
+      self.sourceDestinationVar.set("SOURCE: " + self.sourceSelected + "    DESTINATION: " + self.destinationSelected);
+      self.sourceDestinationLabel.update_idletasks();
+
       self.root.update_idletasks();
 
       if(self.state == "FollowLine" and self.line_drive and self.sonar_drive):
           self.tone_pub.publish(self.FOLLOW_TONE);
-#    self.isAsleep = True;
 
-#      if(self.state == "Stop" and rospy.Time.now() - self.timeOfLastActivity > rospy.Duration(10)):
-#          call(["rosservice", "call", "/raspicam_node/stop_capture"]);
+      if(not self.isAsleep and self.state == "Stop" and rospy.Time.now() - self.timeOfLastActivity > rospy.Duration(60)):
+          call(["rosservice", "call", "/raspicam_node/stop_capture"]);
+          self.isAsleep = True;
+          rospy.loginfo("Going to sleep");
+
 
       self.root.after(200, self.updateLabel);
  
@@ -391,8 +492,14 @@ class DriveCreate2:
         if (self.state != "FollowLine"):
             continue;
       
-        if(self.intersection_err == -1000.0 and self.line_err == -1000.0):
-            self.sendStopCmd();
+	if(self.line_err == -1000.0):
+	    self.noLineCount = self.noLineCount + 1;
+	    if(self.noLineCount > 20):
+		rospy.loginfo_throttle(5,"Stopping since line isn't visible");
+                self.sendStopCmd();
+                self.state = "Stop";
+	    if(self.intersection_err == -1000.0):
+                self.sendStopCmd();
             
         elif(self.intersection_err != -1000.0):
             while(self.intersection_err != -1000.0):
@@ -447,6 +554,7 @@ class DriveCreate2:
             
         elif(self.line_err != -1000.0):
             self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/50.0));
+	    self.noLineCount = 0;
             
       print("Thread exited cleanly");
 
