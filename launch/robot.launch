@@ -9,6 +9,7 @@
         <param name="process_scale" value="0.25" />
         <param name="show_images" value="False" />
         <param name="check_intersections" value="False" />
+        <param name="check_left_right_line_err" value="True" />
         <param name="use_pid" value="False" />
 
         <param name="b_lower" value="0" />

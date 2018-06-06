@@ -53,6 +53,7 @@ class ImageInfoExtractor
 
         float m_prev_cx;
         bool m_show_images;
+        bool m_check_left_right_line_err;
         Mat kernel;
         
         int bgr_color_lower[3];
@@ -64,10 +65,14 @@ class ImageInfoExtractor
         ros::Publisher err_pub;
         ros::Publisher line_visible_pub;
         ros::Publisher intersection_err_pub;
+        ros::Publisher left_image_err_pub;
+        ros::Publisher right_image_err_pub;
 
         float process_scale;
 
         std_msgs::Float32 err;
+        std_msgs::Float32 left_line_err;
+        std_msgs::Float32 right_line_err;
         std_msgs::Float32 intersection_err;
         std_msgs::Bool line_visible;
 
@@ -169,7 +174,9 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
             (int)2*cv_ptr->image.size().height/3);
 
 
+
     Mat roi = bgr_mask(rect);
+    Mat roi_left = roi.clone();
     
     if(m_show_images)
     {
@@ -189,7 +196,7 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         cx = m_prev_cx*0.5 + cx;
         m_prev_cx = cx;
 
-        err.data = (cx - (float)(cv_ptr->image.size().width)/2.0);
+        err.data = (cx - (float)(roi.size().width)/2.0);
         err_pub.publish(err);
         line_visible.data = true;
         no_line_count = 0;
@@ -205,6 +212,61 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         line_visible.data = false;
         line_visible_pub.publish(line_visible);
     }
+
+    if(m_check_left_right_line_err)
+    {
+        cv::Rect left_rect(0, 0, (int)roi.size().width/2, roi.size().height);
+        cv::Rect right_rect((int)roi.size().width/2, 0, (int)roi.size().width/2, roi.size().height);
+        roi(left_rect) = 0;
+        if(m_show_images)
+        {
+            cv::imshow("ROI only right", roi);
+            cv::waitKey(3);
+        }
+        mu = cv::moments(roi, false);
+        if(mu.m00 > 0)
+        {
+            cx = (float)mu.m10/mu.m00;
+            cy = (float)mu.m01/mu.m00;
+            
+            cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(0,0,255), 4);
+
+            right_line_err.data = (cx - (float)(roi.size().width)/2.0);
+            right_image_err_pub.publish(right_line_err);
+        }
+        else
+        {
+            right_line_err.data = -1000.0;
+            right_image_err_pub.publish(right_line_err);
+        }
+        
+        roi_left(right_rect) = 0; // for the left image, make the right pixels black
+        if(m_show_images)
+        {
+            cv::imshow("ROI only left", roi_left);
+            cv::waitKey(3);
+        }
+        mu = cv::moments(roi_left, false);
+        if(mu.m00 > 0)
+        {
+            cx = (float)mu.m10/mu.m00;
+            cy = (float)mu.m01/mu.m00;
+        
+            cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(0,255,0), 4);
+
+            left_line_err.data = (cx - (float)(roi_left.size().width)/2.0);
+            left_image_err_pub.publish(left_line_err);
+        }
+        else
+        {
+            left_line_err.data = -1000.0;
+            left_image_err_pub.publish(left_line_err);
+        }
+
+    }
+
+
+
     if(m_show_images)
     {
         cv::imshow("Fin Img", cv_ptr->image);
@@ -315,17 +377,20 @@ int main(int argc, char** argv) {
     //std::string s;
     //n.param<std::string>("my_param", s, "default_value");
     
-    bool show_images;
-    nodeh.param("/processImage/show_images", imageInfoExtractor.m_show_images, false);
+    nodeh.param("/processImage/show_images", imageInfoExtractor.m_show_images, true);
     ROS_INFO("Show Images: %d\n", (imageInfoExtractor.m_show_images));
 
-    bool check_intersections;
+    nodeh.param("/processImage/check_left_right_line_err", imageInfoExtractor.m_check_left_right_line_err, true);
+    ROS_INFO("Check Left Right Line Err: %d\n", (imageInfoExtractor.m_check_left_right_line_err));
+
     nodeh.param("/processImage/check_intersections", imageInfoExtractor.check_intersections, true);
 
 
     imageInfoExtractor.err_pub = nodeh.advertise<std_msgs::Float32>("/line_error", 1);
     imageInfoExtractor.line_visible_pub = nodeh.advertise<std_msgs::Bool>("/line_visible", 1);
     imageInfoExtractor.intersection_err_pub = nodeh.advertise<std_msgs::Float32>("/intersection_err", 1);
+    imageInfoExtractor.left_image_err_pub = nodeh.advertise<std_msgs::Float32>("/left_line_err", 1);
+    imageInfoExtractor.right_image_err_pub = nodeh.advertise<std_msgs::Float32>("/right_line_err", 1);
     ros::Subscriber img_sub = nodeh.subscribe("/raspicam_node/image_raw", 1, &ImageInfoExtractor::imgCallback, &imageInfoExtractor);
 
     ros::spin();

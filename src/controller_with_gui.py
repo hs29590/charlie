@@ -434,7 +434,7 @@ class DriveCreate2:
               time.sleep(0.01);
               current = self.yaw;
               #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
-              rospy.loginfo("des > sta - Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
+              #rospy.loginfo("des > sta - Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
               if(current > desired or current < starting):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
@@ -452,7 +452,7 @@ class DriveCreate2:
               time.sleep(0.001);
               current = self.yaw;
               #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
-              rospy.loginfo("des < sta Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
+              #rospy.loginfo("des < sta Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
               if(current < desired or current > starting):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
