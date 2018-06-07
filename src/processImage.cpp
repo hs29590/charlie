@@ -186,7 +186,7 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
     
     //Get the moments of the mask to get general direction of the line
     cv::Moments mu = cv::moments(roi, false);
-    if(mu.m00 > 0)
+    if(mu.m00 > 500)
     {
         cx = (float)mu.m10/mu.m00;
         cy = (float)mu.m01/mu.m00;
@@ -224,7 +224,7 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
             cv::waitKey(3);
         }
         mu = cv::moments(roi, false);
-        if(mu.m00 > 0)
+        if(mu.m00 > 100)
         {
             cx = (float)mu.m10/mu.m00;
             cy = (float)mu.m01/mu.m00;
@@ -247,7 +247,7 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
             cv::waitKey(3);
         }
         mu = cv::moments(roi_left, false);
-        if(mu.m00 > 0)
+        if(mu.m00 > 100)
         {
             cx = (float)mu.m10/mu.m00;
             cy = (float)mu.m01/mu.m00;

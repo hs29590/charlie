@@ -413,7 +413,10 @@ class DriveCreate2:
 
   def smooth_drive(self, lin, ang):
       self.twist.linear.x = self.last_drive_lin*0.5 + lin*0.5;
-      self.twist.angular.z = ang;
+      self.twist.angular.z = self.last_drive_ang*0.5 + ang*0.5;
+
+      self.last_drive_lin = self.twist.linear.x;
+      self.last_drive_ang = self.twist.angular.z;
 
       if(self.twist.linear.x < 0.05):
           self.twist.linear.x = 0.0;
@@ -518,7 +521,7 @@ class DriveCreate2:
         elif(self.intersection_err != -1000.0):
             t_end = time.time() + self.TIME_FOR_MOVING_TOWARDS_INTERSECTION;
             while(time.time() < t_end):
-                self.smooth_drive(self.LINEAR_SPEED, (-float(self.intersection_err)/50.0));
+                self.smooth_drive(self.LINEAR_SPEED, (-float(self.intersection_err)/40.0));
                 time.sleep(0.02);
 
             nextTurn = self.currentPath[self.currentPathIndex];
@@ -532,7 +535,7 @@ class DriveCreate2:
                 rospy.loginfo("Turning Left");
                 t_end = time.time() + self.TIME_FOR_TURNING; 
                 while(time.time() < t_end and self.left_line_err != -1000.0):
-                    self.smooth_drive(self.LINEAR_SPEED, (-float(self.left_line_err)/40.0));
+                    self.smooth_drive(self.LINEAR_SPEED, (-float(self.left_line_err)/30.0));
                     time.sleep(0.02);
                 self.state = "FollowLine";
                 rospy.loginfo("I Turned Left");
@@ -540,7 +543,7 @@ class DriveCreate2:
                 rospy.loginfo("Turning Right");
                 t_end = time.time() + self.TIME_FOR_TURNING; 
                 while(time.time() < t_end and self.right_line_err != -1000.0):
-                    self.smooth_drive(self.LINEAR_SPEED, (-float(self.right_line_err)/40.0));
+                    self.smooth_drive(self.LINEAR_SPEED, (-float(self.right_line_err)/30.0));
                     time.sleep(0.02);
                 self.state = "FollowLine";
                 rospy.loginfo("I Turned Right");
@@ -548,7 +551,7 @@ class DriveCreate2:
                 rospy.loginfo("Going Straight");
             
         elif(self.line_err != -1000.0):
-            self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/50.0));
+            self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/40.0));
 	    self.noLineCount = 0;
             
       print("Thread exited cleanly");

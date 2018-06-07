@@ -27,10 +27,10 @@
 
     </node>
     
- <!--   <node name="controller" pkg="charlie" type="controller_with_gui.py" output="screen" clear_params="true">
+    <node name="controller" pkg="charlie" type="controller_with_gui.py" output="screen" clear_params="true">
         <param name="publishedMqttTopic_navdata" value="/mqtt/navdata"/>
     </node>
-    -->
+    
 
    <!-- <node name="sonarPublisher" pkg="charlie" type="sonarNode.py" output="screen" clear_params="true">
         <param name="sampleParam" value="none" />
@@ -60,9 +60,8 @@
   -->
 
   <!-- iRobotCreate2 -->
-<!--
-  <node pkg="rosbag" type="play" name="player" output="screen" args="clock /home/harshit/catkin_ws/src/create_eyes/logs/intersections/red_intersections.bag -q -r 0.3"/>
-  -->
+
+  <node pkg="rosbag" type="play" name="player" output="screen" args="--clock /home/harshit/catkin_ws/src/create_eyes/logs/intersections/red_intersections.bag"/>
 
 
   <arg name="id" default="0"/>
@@ -70,6 +69,7 @@
   <arg name="port" default="/dev/ttyUSB0"/>
   <arg name="publish_name" default="true"/>
 
+  <!--
   <node ns="$(arg base_name)$(arg id)" name="irobotdriver" pkg="irobotcreate2" type="irobotcreate2" respawn="false" output="screen">
     <rosparam param="poseCovariance">[1e-2, 0,    0,    0,    0,    0,
                                       0,    1e-2, 0,    0,    0,    0,
@@ -88,7 +88,7 @@
     <param name="publish_name_" value="$(arg publish_name)"/>
     <param name="publishTf" value="true"/>
   </node>
-
+-->
 
 </launch>
 
