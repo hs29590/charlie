@@ -515,14 +515,14 @@ class DriveCreate2:
                 self.state = "Stop";
             elif(nextTurn == 'L'):
                 rospy.loginfo("Turning Left");
-                for stpCnter in range(50):
-                    self.smooth_drive(self.LINEAR_SPEED, 0.0);
-                    time.sleep(0.01);
+#                for stpCnter in range(50):
+#                    self.smooth_drive(self.LINEAR_SPEED, 0.0);
+#                    time.sleep(0.01);
                 for stpCnter in range(100):
-                    self.smooth_drive(self.LINEAR_SPEED, 0.5);
+                    self.smooth_drive(0, 0.7);
                     time.sleep(0.02);
                 while(abs(self.line_err) > 10):
-                    self.smooth_drive(self.LINEAR_SPEED, 0.5);
+                    self.smooth_drive(0, 0.7);
                     time.sleep(0.02);
                 #self.state = "Turn";
                 #if(self.command_turn(math.pi/2)):
@@ -531,14 +531,14 @@ class DriveCreate2:
                 #self.state = "Error, Turn not successfull";
             elif(nextTurn == 'R'):
                 rospy.loginfo("Turning Right");
-                for stpCnter in range(50):
-                    self.smooth_drive(self.LINEAR_SPEED, 0.0);
-                    time.sleep(0.01);
+#                for stpCnter in range(50):
+#                    self.smooth_drive(self.LINEAR_SPEED, 0.0);
+#                    time.sleep(0.01);
                 for stpCnter in range(100):
-                    self.smooth_drive(self.LINEAR_SPEED, -0.5);
+                    self.smooth_drive(0, -0.7);
                     time.sleep(0.02);
                 while(abs(self.line_err) > 10):
-                    self.smooth_drive(self.LINEAR_SPEED, -0.5);
+                    self.smooth_drive(0, -0.7);
                     time.sleep(0.02);
 
 # for stpCnter in range(0,10):
