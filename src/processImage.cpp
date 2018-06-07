@@ -186,10 +186,12 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
     
     //Get the moments of the mask to get general direction of the line
     cv::Moments mu = cv::moments(roi, false);
-    if(mu.m00 > 500)
+    if(mu.m00 > 15000)
     {
         cx = (float)mu.m10/mu.m00;
         cy = (float)mu.m01/mu.m00;
+
+        ROS_INFO("moment: %f\n",mu.m00);
 
         cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(255,0,0), 4);
         
