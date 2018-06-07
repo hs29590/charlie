@@ -32,7 +32,10 @@ class DriveCreate2:
 
     self.LINEAR_SPEED = 0.8;   
     self.state = "Stop"
-    
+    self.TIME_FOR_MOVING_TOWARDS_INTERSECTION = 2; #in seconds, this should also change with the LINEAR SPEED
+    self.TIME_FOR_TURNING = 4; #in seconds, this should also change with the LINEAR_SPEED
+
+
     #Publishers
     self.cmd_vel_pub = rospy.Publisher('iRobot_0/cmd_vel', Twist, queue_size=1)
     self.mode_pub = rospy.Publisher('iRobot_0/mode', String, queue_size = 1)
@@ -157,6 +160,8 @@ class DriveCreate2:
     self.intersectionVisibleCount = 0;
     
     self.line_err = -1000.0;
+    self.left_line_err = -1000.0;
+    self.right_line_err = -1000.0;
     self.intersection_err = -1000.0;
 
     self.STOP_TONE = 2;
@@ -169,6 +174,9 @@ class DriveCreate2:
     self.line_visible_sub = rospy.Subscriber('line_visible', Bool, self.lineVisibleCallback)
     self.current_mode_sub = rospy.Subscriber('iRobot_0/current_mode', String, self.current_mode_callback);
     self.err_sub = rospy.Subscriber('line_error', Float32, self.errCallback)
+    self.right_err_sub = rospy.Subscriber('right_line_err', Float32, self.rightLineErrCallback);
+    self.left_err_sub = rospy.Subscriber('left_line_err', Float32, self.leftLineErrCallback);
+
     self.odom_sub = rospy.Subscriber('iRobot_0/odom', Odometry, self.odomCallback)
     self.sonar_sub = rospy.Subscriber('sonar_drive', Bool, self.sonarCallback);
     self.intersection_sub = rospy.Subscriber('/intersection_err', Float32, self.intersectionCallback); 
@@ -383,6 +391,12 @@ class DriveCreate2:
   def intersectionCallback(self, msg):
       self.intersection_err = msg.data;
 
+  def leftLineErrCallback(self, err):
+      self.left_line_err = err.data;
+
+  def rightLineErrCallback(self, err):
+      self.right_line_err = err.data;
+
   def errCallback(self,err):
     self.line_err = err.data;
 
@@ -502,52 +516,33 @@ class DriveCreate2:
                 self.sendStopCmd();
             
         elif(self.intersection_err != -1000.0):
-            while(self.intersection_err != -1000.0):
+            t_end = time.time() + self.TIME_FOR_MOVING_TOWARDS_INTERSECTION;
+            while(time.time() < t_end):
                 self.smooth_drive(self.LINEAR_SPEED, (-float(self.intersection_err)/50.0));
-            self.sendStopCmd();
-            rospy.loginfo("[Intersection] Sent Stop cmd");
+                time.sleep(0.02);
+
             nextTurn = self.currentPath[self.currentPathIndex];
             self.currentPathIndex = self.currentPathIndex + 1;
             rospy.loginfo("Next Turn is: " + nextTurn); 
-            self.sendStopCmd();
             if(nextTurn == 'E'):
                 rospy.loginfo("Stopping at end");
+                self.sendStopCmd();
                 self.state = "Stop";
             elif(nextTurn == 'L'):
                 rospy.loginfo("Turning Left");
-                for stpCnter in range(50):
-                    self.smooth_drive(self.LINEAR_SPEED, 0.0);
-                    time.sleep(0.01);
-                for stpCnter in range(100):
-                    self.smooth_drive(self.LINEAR_SPEED, 0.5);
+                t_end = time.time() + self.TIME_FOR_TURNING; 
+                while(time.time() < t_end and self.left_line_err != -1000.0):
+                    self.smooth_drive(self.LINEAR_SPEED, (-float(self.left_line_err)/40.0));
                     time.sleep(0.02);
-                while(abs(self.line_err) > 10):
-                    self.smooth_drive(self.LINEAR_SPEED, 0.5);
-                    time.sleep(0.02);
-                #self.state = "Turn";
-                #if(self.command_turn(math.pi/2)):
                 self.state = "FollowLine";
-                #else:
-                #self.state = "Error, Turn not successfull";
+                rospy.loginfo("I Turned Left");
             elif(nextTurn == 'R'):
                 rospy.loginfo("Turning Right");
-                for stpCnter in range(50):
-                    self.smooth_drive(self.LINEAR_SPEED, 0.0);
-                    time.sleep(0.01);
-                for stpCnter in range(100):
-                    self.smooth_drive(self.LINEAR_SPEED, -0.5);
+                t_end = time.time() + self.TIME_FOR_TURNING; 
+                while(time.time() < t_end and self.right_line_err != -1000.0):
+                    self.smooth_drive(self.LINEAR_SPEED, (-float(self.right_line_err)/40.0));
                     time.sleep(0.02);
-                while(abs(self.line_err) > 10):
-                    self.smooth_drive(self.LINEAR_SPEED, -0.5);
-                    time.sleep(0.02);
-
-# for stpCnter in range(0,10):
-#                    self.smooth_drive(self.LINEAR_SPEED, -0.1);
-                #self.state = "Turn";
-                #if(self.command_turn(-math.pi/2)):
                 self.state = "FollowLine";
-                #else:
-                #self.state = "Error, Turn not successfull";
                 rospy.loginfo("I Turned Right");
             elif(nextTurn == 'S'):
                 rospy.loginfo("Going Straight");
@@ -563,10 +558,6 @@ def main(args):
   ic = DriveCreate2()
   ic.runThread.start();
   ic.root.mainloop();
-#  ic.runThread.join();
-  #rospy.spin is just a blocking call, which my guy above does as well.
-#  rospy.spin();
         
 if __name__ == '__main__':
     main(sys.argv)
-
