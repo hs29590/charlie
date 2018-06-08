@@ -103,7 +103,7 @@ class DriveCreate2:
     self.lineLabel.grid(row=0, column=0);
 
     self.oiModeLabel = ttk.Label(self.mainframe, textvariable=self.current_oi_mode, font=('Helvetica',12));
-    self.oiModeLabel.grid(row=10,column=1);
+    self.oiModeLabel.grid(row=14,column=0);
 
     self.sonarLabel = ttk.Label(self.mainframe, textvariable=self.sonarStatus, font=('Helvetica',12));
     self.sonarLabel.grid(row=0,column=1);
@@ -129,7 +129,7 @@ class DriveCreate2:
     ttk.Button(self.mainframe, text="Reset", style='my.TButton', command=self.resetPressed, width=16).grid(row=10, column=0, pady=5)
     
     self.sourceDestinationLabel = ttk.Label(self.mainframe, textvariable=self.sourceDestinationVar, font=('Helvetica',12));
-    self.sourceDestinationLabel.grid(row=14, column=0, columnspan=2);
+    self.sourceDestinationLabel.grid(row=10, column=1);
 
 #    srcSelectMenu = OptionMenu(self.mainframe, self.srcNode, *srcChoices)
 #    #Label(self.mainframe, text="Choose Process", font=("Helvetica", 14)).grid(row = 2, column=1, pady=(15,2))
