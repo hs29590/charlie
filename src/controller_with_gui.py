@@ -100,10 +100,10 @@ class DriveCreate2:
     self.lineLabel.grid(row=0, column=0);
 
     self.oiModeLabel = ttk.Label(self.mainframe, textvariable=self.current_oi_mode, font=('Helvetica',12));
-    self.oiModeLabel.grid(row=10,column=1);
+    self.oiModeLabel.grid(row=14,column=0);
 
     self.sonarLabel = ttk.Label(self.mainframe, textvariable=self.sonarStatus, font=('Helvetica',12));
-    self.sonarLabel.grid(row=0,column=1);
+    self.sonarLabel.grid(row=10,column=1);
 
     self.intersectionLabel = ttk.Label(self.mainframe, textvariable=self.intersectionVisible, font=('Helvetica',12));
     self.intersectionLabel.grid(row=13, column=0);
@@ -114,19 +114,19 @@ class DriveCreate2:
     self.buttonStyle = ttk.Style()
     self.buttonStyle.configure('my.TButton', font=('Helvetica', 18))
 
-    ttk.Button(self.mainframe, text="Go", style='my.TButton', command=self.goAhead, width=16).grid(row=2, rowspan=2, column=0, pady=25)
-    ttk.Button(self.mainframe, text="Turn and Go", style='my.TButton', command=self.turnAndGo, width=16).grid(row=2, rowspan=2, column=1, pady=25)
+    ttk.Button(self.mainframe, text="Go", style='my.TButton', command=self.goAhead, width=16).grid(row=2, rowspan=2, column=0, pady=15)
+    ttk.Button(self.mainframe, text="Turn and Go", style='my.TButton', command=self.turnAndGo, width=16).grid(row=2, rowspan=2, column=1, pady=15)
     ttk.Button(self.mainframe, text="STOP", style='my.TButton', command=self.Stop, width=16).grid(row=4, rowspan=3, column=0, columnspan=3, pady=5)
-    ttk.Button(self.mainframe, text="Dock", style='my.TButton', command=self.dock, width = 16).grid(row=8,column=0, pady=15)
-    ttk.Button(self.mainframe, text="Un-Dock", style='my.TButton', command=self.undock, width = 16).grid(row=8,column=1, pady=15)
+    ttk.Button(self.mainframe, text="Dock", style='my.TButton', command=self.dock, width = 16).grid(row=13,column=0, pady=10)
+    ttk.Button(self.mainframe, text="Un-Dock", style='my.TButton', command=self.undock, width = 16).grid(row=13,column=1, pady=10)
 
-    ttk.Button(self.mainframe, text="SOURCE", style='my.TButton', command=self.selectSource, width = 16).grid(row=13,column=0, pady=15)
-    ttk.Button(self.mainframe, text="DESTINATION", style='my.TButton', command=self.selectDestination, width = 16).grid(row=13,column=1, pady=15)
+    ttk.Button(self.mainframe, text="FROM", style='my.TButton', command=self.selectSource, width = 16).grid(row=8,column=0, pady=10)
+    ttk.Button(self.mainframe, text="TO", style='my.TButton', command=self.selectDestination, width = 16).grid(row=8,column=1, pady=10)
 
     ttk.Button(self.mainframe, text="Reset", style='my.TButton', command=self.resetPressed, width=16).grid(row=10, column=0, pady=5)
     
     self.sourceDestinationLabel = ttk.Label(self.mainframe, textvariable=self.sourceDestinationVar, font=('Helvetica',12));
-    self.sourceDestinationLabel.grid(row=14, column=0, columnspan=2);
+    self.sourceDestinationLabel.grid(row=0, column=1);
 
 #    srcSelectMenu = OptionMenu(self.mainframe, self.srcNode, *srcChoices)
 #    #Label(self.mainframe, text="Choose Process", font=("Helvetica", 14)).grid(row = 2, column=1, pady=(15,2))
@@ -175,8 +175,8 @@ class DriveCreate2:
    
     self.timeOfLastActivity = rospy.Time.now();
 
-    self.sourceSelected = '0';
-    self.destinationSelected = '0';
+    self.sourceSelected = None;
+    self.destinationSelected = None;
 
     self.runThread = threading.Thread(target=self.runThreadFunc)
     self.runThread.daemon = True
@@ -216,13 +216,13 @@ class DriveCreate2:
         self.pathPlanner.setEndNode(self.destinationSelected);
         toplevel.destroy();
 
-    ttk.Button(toplevel, text="A", style='my.TButton', command=aButton).grid(column = 0, row = 0, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="B", style='my.TButton', command=bButton).grid(column = 1, row = 0, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="C", style='my.TButton', command=cButton).grid(column = 0, row = 1, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="D", style='my.TButton', command=dButton).grid(column = 1, row = 1, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="E", style='my.TButton', command=eButton).grid(column = 0, row = 2, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="F", style='my.TButton', command=fButton).grid(column = 1, row = 2, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="G", style='my.TButton', command=gButton).grid(column = 0, row = 3, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['A'], style='my.TButton', command=aButton).grid(column = 0, row = 0, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['B'], style='my.TButton', command=bButton).grid(column = 1, row = 0, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['C'], style='my.TButton', command=cButton).grid(column = 0, row = 1, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['D'], style='my.TButton', command=dButton).grid(column = 1, row = 1, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['E'], style='my.TButton', command=eButton).grid(column = 0, row = 2, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['F'], style='my.TButton', command=fButton).grid(column = 1, row = 2, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['G'], style='my.TButton', command=gButton).grid(column = 0, row = 3, padx = 10, pady = 10);
 
   def srcpopup(self):
 
@@ -257,13 +257,13 @@ class DriveCreate2:
         self.pathPlanner.setStartNode(self.sourceSelected);
         toplevel.destroy();
 
-    ttk.Button(toplevel, text="A", style='my.TButton', command=aButton).grid(column = 0, row = 0, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="B", style='my.TButton', command=bButton).grid(column = 1, row = 0, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="C", style='my.TButton', command=cButton).grid(column = 0, row = 1, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="D", style='my.TButton', command=dButton).grid(column = 1, row = 1, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="E", style='my.TButton', command=eButton).grid(column = 0, row = 2, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="F", style='my.TButton', command=fButton).grid(column = 1, row = 2, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="G", style='my.TButton', command=gButton).grid(column = 0, row = 3, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['A'], style='my.TButton', command=aButton).grid(column = 0, row = 0, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['B'], style='my.TButton', command=bButton).grid(column = 1, row = 0, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['C'], style='my.TButton', command=cButton).grid(column = 0, row = 1, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['D'], style='my.TButton', command=dButton).grid(column = 1, row = 1, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['E'], style='my.TButton', command=eButton).grid(column = 0, row = 2, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['F'], style='my.TButton', command=fButton).grid(column = 1, row = 2, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['G'], style='my.TButton', command=gButton).grid(column = 0, row = 3, padx = 10, pady = 10);
 
   def selectSource(self, *args):
       self.srcpopup();
@@ -364,8 +364,9 @@ class DriveCreate2:
       self.intersectionLabel.update_idletasks();
       self.intersectionVisible.set("Intersection: " + str(self.intersection_err));
 
-      self.sourceDestinationVar.set("SOURCE: " + self.sourceSelected + "    DESTINATION: " + self.destinationSelected);
-      self.sourceDestinationLabel.update_idletasks();
+      if(self.sourceSelected is not None and self.destinationSelected is not None):
+          self.sourceDestinationVar.set("From: " + self.pathPlanner.station_names[self.sourceSelected] + "    To: " + self.pathPlanner.station_names[self.destinationSelected]);
+          self.sourceDestinationLabel.update_idletasks();
 
       self.root.update_idletasks();
 
@@ -503,53 +504,51 @@ class DriveCreate2:
             
         elif(self.intersection_err != -1000.0):
             while(self.intersection_err != -1000.0):
-                self.smooth_drive(self.LINEAR_SPEED, (-float(self.intersection_err)/50.0));
-            self.sendStopCmd();
+                self.smooth_drive(0.3, (-float(self.intersection_err)/50.0));
             rospy.loginfo("[Intersection] Sent Stop cmd");
             nextTurn = self.currentPath[self.currentPathIndex];
             self.currentPathIndex = self.currentPathIndex + 1;
             rospy.loginfo("Next Turn is: " + nextTurn); 
-            self.sendStopCmd();
+
             if(nextTurn == 'E'):
+                self.sendStopCmd();
+                self.sendStopCmd();
                 rospy.loginfo("Stopping at end");
                 self.state = "Stop";
+
             elif(nextTurn == 'L'):
+                self.sendStopCmd();
+                self.sendStopCmd();
                 rospy.loginfo("Turning Left");
-#                for stpCnter in range(50):
-#                    self.smooth_drive(self.LINEAR_SPEED, 0.0);
-#                    time.sleep(0.01);
-                for stpCnter in range(100):
+                for stpCnter in range(50):
                     self.smooth_drive(0, 0.7);
                     time.sleep(0.02);
-                while(abs(self.line_err) > 10):
+
+                t_end = time.time() + 5;
+                while(abs(self.line_err) > 10 and time.time() < t_end and self.state == "FollowLine"):
                     self.smooth_drive(0, 0.7);
-                    time.sleep(0.02);
-                #self.state = "Turn";
-                #if(self.command_turn(math.pi/2)):
+                    time.sleep(0.01);
                 self.state = "FollowLine";
-                #else:
-                #self.state = "Error, Turn not successfull";
+
             elif(nextTurn == 'R'):
+                self.sendStopCmd();
+                self.sendStopCmd();
                 rospy.loginfo("Turning Right");
-#                for stpCnter in range(50):
-#                    self.smooth_drive(self.LINEAR_SPEED, 0.0);
-#                    time.sleep(0.01);
-                for stpCnter in range(100):
-                    self.smooth_drive(0, -0.7);
-                    time.sleep(0.02);
-                while(abs(self.line_err) > 10):
+
+                for stpCnter in range(50):
                     self.smooth_drive(0, -0.7);
                     time.sleep(0.02);
 
-# for stpCnter in range(0,10):
-#                    self.smooth_drive(self.LINEAR_SPEED, -0.1);
-                #self.state = "Turn";
-                #if(self.command_turn(-math.pi/2)):
+                t_end = time.time() + 5;
+                while(abs(self.line_err) > 10 and time.time() < t_end and self.state == "FollowLine"):
+                    self.smooth_drive(0, -0.7);
+                    time.sleep(0.01);
+
                 self.state = "FollowLine";
-                #else:
-                #self.state = "Error, Turn not successfull";
                 rospy.loginfo("I Turned Right");
+
             elif(nextTurn == 'S'):
+                self.smooth_drive(0.4, (-float(self.line_err)/50.0));
                 rospy.loginfo("Going Straight");
             
         elif(self.line_err != -1000.0):
@@ -563,9 +562,6 @@ def main(args):
   ic = DriveCreate2()
   ic.runThread.start();
   ic.root.mainloop();
-#  ic.runThread.join();
-  #rospy.spin is just a blocking call, which my guy above does as well.
-#  rospy.spin();
         
 if __name__ == '__main__':
     main(sys.argv)
