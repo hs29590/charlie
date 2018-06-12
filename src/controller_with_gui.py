@@ -34,7 +34,7 @@ class DriveCreate2:
     self.state = "Stop"
     
     #Publishers
-    self.cmd_vel_pub = rospy.Publisher('iRobot_0/cmd_vel', Twist, queue_size=1)
+    self.cmd_vel_pub = rospy.Publisher('raw_cmd_vel', Twist, queue_size=1)
     self.mode_pub = rospy.Publisher('iRobot_0/mode', String, queue_size = 1)
     self.tone_pub = rospy.Publisher('buzzer1/tone', Int32, queue_size = 1)
     
@@ -399,17 +399,22 @@ class DriveCreate2:
       self.batteryStatus.set(str("%.2f" % round(msg.level,2))+"%, Docked: " + str(self.docked));
 
   def smooth_drive(self, lin, ang):
-      self.twist.linear.x = self.last_drive_lin*0.5 + lin*0.5;
-      self.twist.angular.z = self.last_drive_ang*0.5 + ang*0.5;
-
-
-      self.last_drive_ang = self.twist.angular.z;
-      self.last_drive_lin = self.twist.linear.x;
-
-      if(self.twist.linear.x < 0.05):
-          self.twist.linear.x = 0.0;
-          
+     
+      self.twist.linear.x = lin;
+      self.twist.angular.z = ang;
       self.cmd_vel_pub.publish(self.twist);
+      
+      #self.twist.linear.x = self.last_drive_lin*0.5 + lin*0.5;
+      #self.twist.angular.z = self.last_drive_ang*0.5 + ang*0.5;
+
+
+      #self.last_drive_ang = self.twist.angular.z;
+      #self.last_drive_lin = self.twist.linear.x;
+
+      #if(self.twist.linear.x < 0.05):
+      #    self.twist.linear.x = 0.0;
+          
+      #self.cmd_vel_pub.publish(self.twist);
 
   def sonarCallback(self, msg):
       self.sonar_drive = msg.data;

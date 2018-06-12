@@ -27,7 +27,10 @@
         <param name="s_upper" value="255" />
         <param name="v_upper" value="255" />
     </node>
-    
+
+    <include file="$(find yocs_velocity_smoother)/launch/standalone.launch" />
+
+
     <node name="controller" pkg="charlie" type="controller_with_gui.py" output="screen" clear_params="true">
     </node>
 
