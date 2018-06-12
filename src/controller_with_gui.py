@@ -30,7 +30,7 @@ class DriveCreate2:
     self.timeOfLastActivity = rospy.Time.now();
     self.isAsleep = False;
 
-    self.LINEAR_SPEED = 0.8;   
+    self.LINEAR_SPEED = 0.5;   
     self.state = "Stop"
     
     #Publishers
@@ -400,7 +400,11 @@ class DriveCreate2:
 
   def smooth_drive(self, lin, ang):
       self.twist.linear.x = self.last_drive_lin*0.5 + lin*0.5;
-      self.twist.angular.z = ang;
+      self.twist.angular.z = self.last_drive_ang*0.5 + ang*0.5;
+
+
+      self.last_drive_ang = self.twist.angular.z;
+      self.last_drive_lin = self.twist.linear.x;
 
       if(self.twist.linear.x < 0.05):
           self.twist.linear.x = 0.0;
@@ -435,7 +439,7 @@ class DriveCreate2:
               time.sleep(0.01);
               current = self.yaw;
               #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
-              rospy.loginfo("des > sta - Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
+#              rospy.loginfo("des > sta - Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
               if(current > desired or current < starting):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
@@ -453,7 +457,7 @@ class DriveCreate2:
               time.sleep(0.001);
               current = self.yaw;
               #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
-              rospy.loginfo("des < sta Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
+#             rospy.loginfo("des < sta Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
               if(current < desired or current > starting):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
@@ -521,12 +525,12 @@ class DriveCreate2:
                 self.sendStopCmd();
                 rospy.loginfo("Turning Left");
                 for stpCnter in range(50):
-                    self.smooth_drive(0, 0.7);
+                    self.smooth_drive(0, 0.5);
                     time.sleep(0.02);
 
                 t_end = time.time() + 5;
                 while(abs(self.line_err) > 10 and time.time() < t_end and self.state == "FollowLine"):
-                    self.smooth_drive(0, 0.7);
+                    self.smooth_drive(0, 0.5);
                     time.sleep(0.01);
                 self.state = "FollowLine";
 
@@ -536,12 +540,12 @@ class DriveCreate2:
                 rospy.loginfo("Turning Right");
 
                 for stpCnter in range(50):
-                    self.smooth_drive(0, -0.7);
+                    self.smooth_drive(0, -0.5);
                     time.sleep(0.02);
 
                 t_end = time.time() + 5;
                 while(abs(self.line_err) > 10 and time.time() < t_end and self.state == "FollowLine"):
-                    self.smooth_drive(0, -0.7);
+                    self.smooth_drive(0, -0.5);
                     time.sleep(0.01);
 
                 self.state = "FollowLine";

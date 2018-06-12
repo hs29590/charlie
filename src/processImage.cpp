@@ -163,9 +163,9 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
     // Apply erosion or dilation on the image
   //  cv::erode(bgr_mask,bgr_mask,kernel);
 
-    cv::Rect rect((int)cv_ptr->image.size().width/4,
+    cv::Rect rect((int)cv_ptr->image.size().width/8,
             0,
-            (int)cv_ptr->image.size().width/2,
+            (int)6*cv_ptr->image.size().width/8,
             (int)2*cv_ptr->image.size().height/3);
 
 
@@ -189,7 +189,7 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         cx = m_prev_cx*0.5 + cx;
         m_prev_cx = cx;
 
-        err.data = (cx - (float)(cv_ptr->image.size().width)/2.0);
+        err.data = (cx - (float)cv_ptr->image.size().width/8.0 - (float)(roi.size().width)/2.0);
         err_pub.publish(err);
         line_visible.data = true;
         no_line_count = 0;
