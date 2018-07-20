@@ -163,13 +163,14 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
     // Apply erosion or dilation on the image
   //  cv::erode(bgr_mask,bgr_mask,kernel);
 
-    cv::Rect rect((int)cv_ptr->image.size().width/8,
-            0,
-            (int)6*cv_ptr->image.size().width/8,
-            (int)2*cv_ptr->image.size().height/3);
+  //  cv::Rect rect((int)cv_ptr->image.size().width/8,
+  //          0,
+  //          (int)6*cv_ptr->image.size().width/8,
+  //          (int)2*cv_ptr->image.size().height/3);
 
 
-    Mat roi = bgr_mask(rect);
+//    Mat roi = bgr_mask(rect);
+    Mat roi = bgr_mask;
     
     if(m_show_images)
     {
@@ -184,12 +185,13 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         cx = (float)mu.m10/mu.m00;
         cy = (float)mu.m01/mu.m00;
 
-        cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(255,0,0), 4);
+       // cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(255,0,0), 4);
         
-        cx = m_prev_cx*0.5 + cx;
-        m_prev_cx = cx;
+        cv::circle(cv_ptr->image, cv::Point((int)cx,(int)cy), 10,  CV_RGB(255,0,0), 4);
+   //     cx = m_prev_cx*0.5 + cx;
+   //     m_prev_cx = cx;
 
-        err.data = (cx - (float)cv_ptr->image.size().width/8.0 - (float)(roi.size().width)/2.0);
+        err.data = (cx - (float)(roi.size().width)/2.0);
         err_pub.publish(err);
         line_visible.data = true;
         no_line_count = 0;

@@ -27,21 +27,18 @@
         <param name="s_upper" value="255" />
         <param name="v_upper" value="255" />
     </node>
-
-<!--    <include file="$(find yocs_velocity_smoother)/launch/standalone.launch" /> -->
-
-
-    <node name="controller" pkg="charlie" type="controller_with_gui.py" output="screen" clear_params="true">
+    
+    <node name="controller" pkg="charlie" type="create_eyes_controller.py" output="screen" clear_params="true">
     </node>
 
-    <node name="sonarPublisher" pkg="charlie" type="sonarNode.py" output="screen" clear_params="true">
+   <!-- <node name="sonarPublisher" pkg="charlie" type="sonarNode.py" output="screen" clear_params="true">
         <param name="sampleParam" value="none" />
-    </node>
+    </node> -->
  
 
-  <node name="beeper" pkg="charlie" type="beepNode.py" output="screen" clear_params="true">
+<!--  <node name="beeper" pkg="charlie" type="beepNode.py" output="screen" clear_params="true">
       <param name="beepType" value="continuous" />
-  </node>
+  </node> -->
 
   <arg name="name" default="raspicam_node" />
 
@@ -59,10 +56,8 @@
 
   <node pkg="rosservice" type="rosservice" name="start_capture" args="call --wait $(arg name)/start_capture"/>
 
-  <!-- iRobotCreate2 -->
-  
   <arg name="config" default="$(find ca_driver)/config/default.yaml" />
-  <arg name="desc" default="false" />
+  <arg name="desc" default="true" />
 
   <node name="ca_driver" pkg="ca_driver" type="ca_driver" output="screen">
     <rosparam command="load" file="$(arg config)" />
@@ -71,32 +66,6 @@
 
   <!-- Robot description -->
   <include if="$(arg desc)" file="$(find ca_description)/launch/create_2.launch" />
-
-  <!--<arg name="id" default="0"/>
-  <arg name="base_name" default="iRobot_"/>
-  <arg name="port" default="/dev/ttyUSB0"/>
-  <arg name="publish_name" default="true"/>
-
-  <node ns="$(arg base_name)$(arg id)" name="irobotdriver" pkg="irobotcreate2" type="irobotcreate2" respawn="false" output="screen">
-       <param name="id_" value="$(arg id)"/> 
-       <param name="base_name_" value="$(arg base_name)"/> 
-    <rosparam param="poseCovariance">[1e-2, 0,    0,    0,    0,    0,
-                                      0,    1e-2, 0,    0,    0,    0,
-                                      0,    0,    1, 0,    0,    0,
-                                      0,    0,    0,    1, 0,    0,
-                                      0,    0,    0,    0,    1, 0,
-                                      0,    0,    0,    0,    0,    1e-1]</rosparam>
-    <rosparam param="twistCovariance">[1e-2, 0,    0,    0,    0,    0,
-                                      0,    1, 0,    0,    0,    0,
-                                      0,    0,    1, 0,    0,    0,
-                                      0,    0,    0,    1, 0,    0,
-                                      0,    0,    0,    0,    1, 0,
-                                      0,    0,    0,    0,    0,    1e-2]</rosparam>
-
-    <param name="port_" value="$(arg port)"/>
-    <param name="publish_name_" value="$(arg publish_name)"/>
-    <param name="publishTf" value="true"/>
-  </node> -->
 
 </launch>
 

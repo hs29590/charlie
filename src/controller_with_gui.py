@@ -12,7 +12,7 @@ from std_msgs.msg import Float64
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool
 from std_msgs.msg import Int32
-from irobotcreate2.msg import Battery
+#from irobotcreate2.msg import Battery
 import tf
 import time
 import numpy
@@ -30,11 +30,11 @@ class DriveCreate2:
     self.timeOfLastActivity = rospy.Time.now();
     self.isAsleep = False;
 
-    self.LINEAR_SPEED = 0.5;   
+    self.LINEAR_SPEED = 0.8;   
     self.state = "Stop"
     
     #Publishers
-    self.cmd_vel_pub = rospy.Publisher('raw_cmd_vel', Twist, queue_size=1)
+    self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
     self.mode_pub = rospy.Publisher('iRobot_0/mode', String, queue_size = 1)
     self.tone_pub = rospy.Publisher('buzzer1/tone', Int32, queue_size = 1)
     
@@ -165,11 +165,11 @@ class DriveCreate2:
     self.currentPathIndex = 0;
 
     #Subscribers
-    self.bat_sub = rospy.Subscriber('iRobot_0/battery', Battery, self.batteryCallback)
+    self.bat_sub = rospy.Subscriber('/battery/charge_ratio', Float32, self.batteryCallback)
     self.line_visible_sub = rospy.Subscriber('line_visible', Bool, self.lineVisibleCallback)
     self.current_mode_sub = rospy.Subscriber('iRobot_0/current_mode', String, self.current_mode_callback);
     self.err_sub = rospy.Subscriber('line_error', Float32, self.errCallback)
-    self.odom_sub = rospy.Subscriber('iRobot_0/odom', Odometry, self.odomCallback)
+    self.odom_sub = rospy.Subscriber('odom', Odometry, self.odomCallback)
     self.sonar_sub = rospy.Subscriber('sonar_drive', Bool, self.sonarCallback);
     self.intersection_sub = rospy.Subscriber('/intersection_err', Float32, self.intersectionCallback); 
    
@@ -386,6 +386,7 @@ class DriveCreate2:
 
   def errCallback(self,err):
     self.line_err = err.data;
+#    rospy.loginfo(self.line_err)
 
   def lineVisibleCallback(self,msg):
       self.lineVisible.set("Line: " + str(msg.data));
@@ -395,26 +396,28 @@ class DriveCreate2:
       self.current_oi_mode.set("OI Mode: " + msg.data);
 
   def batteryCallback(self,msg):
-      self.docked = msg.dock;
-      self.batteryStatus.set(str("%.2f" % round(msg.level,2))+"%, Docked: " + str(self.docked));
+#      self.docked = msg.dock;
+#self.batteryStatus.set(str("%.2f" % round(msg.level,2))+"%, Docked: " + str(self.docked));
+      self.batteryStatus.set(str("%.2f" % (msg.data*100) ) +"%, Docked: " + str(self.docked));
 
   def smooth_drive(self, lin, ang):
      
-      self.twist.linear.x = lin;
+#self.twist.linear.x = lin;
       self.twist.angular.z = ang;
-      self.cmd_vel_pub.publish(self.twist);
+      self.twist.linear.x = lin;
+#      self.cmd_vel_pub.publish(self.twist);
       
-      #self.twist.linear.x = self.last_drive_lin*0.5 + lin*0.5;
+#      self.twist.linear.x = self.last_drive_lin*0.5 + lin*0.5;
       #self.twist.angular.z = self.last_drive_ang*0.5 + ang*0.5;
 
 
       #self.last_drive_ang = self.twist.angular.z;
-      #self.last_drive_lin = self.twist.linear.x;
+#      self.last_drive_lin = self.twist.linear.x;
 
-      #if(self.twist.linear.x < 0.05):
-      #    self.twist.linear.x = 0.0;
+#      if(self.twist.linear.x < 0.05):
+#          self.twist.linear.x = 0.0;
           
-      #self.cmd_vel_pub.publish(self.twist);
+      self.cmd_vel_pub.publish(self.twist);
 
   def sonarCallback(self, msg):
       self.sonar_drive = msg.data;
@@ -444,7 +447,7 @@ class DriveCreate2:
               time.sleep(0.01);
               current = self.yaw;
               #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
-#              rospy.loginfo("des > sta - Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
+              rospy.loginfo("des > sta - Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
               if(current > desired or current < starting):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
@@ -461,8 +464,8 @@ class DriveCreate2:
               self.smooth_drive(0.0,-0.5);
               time.sleep(0.001);
               current = self.yaw;
-              #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
-#             rospy.loginfo("des < sta Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
+#              rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
+              rospy.loginfo("des < sta Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
               if(current < desired or current > starting):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
@@ -491,10 +494,11 @@ class DriveCreate2:
     quaternion = (msg.pose.pose.orientation.x,msg.pose.pose.orientation.y,msg.pose.pose.orientation.z,msg.pose.pose.orientation.w)
     euler = tf.transformations.euler_from_quaternion(quaternion)
     self.yaw = euler[2]
+    print(quaternion);
 
   def runThreadFunc(self):
       while not rospy.is_shutdown():
-        time.sleep(0.02);
+        time.sleep(0.005);
 
         if not self.sonar_drive:
                   self.sendStopCmd();
@@ -561,7 +565,7 @@ class DriveCreate2:
                 rospy.loginfo("Going Straight");
             
         elif(self.line_err != -1000.0):
-            self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/50.0));
+            self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/70.0));
 	    self.noLineCount = 0;
             
       print("Thread exited cleanly");

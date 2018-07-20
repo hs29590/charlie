@@ -11,7 +11,7 @@ from std_msgs.msg import Float64
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool
 from std_msgs.msg import Int32
-from irobotcreate2.msg import Battery
+#from irobotcreate2.msg import Battery
 import tf
 import time
 import numpy
@@ -33,7 +33,8 @@ class DriveCreate2:
     self.state = "Stop"
     
     #Publishers
-    self.cmd_vel_pub = rospy.Publisher('iRobot_0/cmd_vel', Twist, queue_size=1)
+    self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+    #self.cmd_vel_pub = rospy.Publisher('raw_cmd_vel', Twist, queue_size=1)
     self.mode_pub = rospy.Publisher('iRobot_0/mode', String, queue_size = 1)
     self.tone_pub = rospy.Publisher('buzzer1/tone', Int32, queue_size = 1)
     
@@ -116,12 +117,12 @@ class DriveCreate2:
     self.FOLLOW_TONE = 5;
 
     #Subscribers
-    self.bat_sub = rospy.Subscriber('iRobot_0/battery', Battery, self.batteryCallback)
+#    self.bat_sub = rospy.Subscriber('iRobot_0/battery', Battery, self.batteryCallback)
     self.line_visible_sub = rospy.Subscriber('line_visible', Bool, self.lineVisibleCallback)
     self.current_mode_sub = rospy.Subscriber('iRobot_0/current_mode', String, self.current_mode_callback);
     self.err_sub = rospy.Subscriber('line_error', Float32, self.errCallback)
     self.ctrl_effort_sub = rospy.Subscriber('control_effort', Float64, self.ctrlEffortCallback);
-    self.odom_sub = rospy.Subscriber('iRobot_0/odom', Odometry, self.odomCallback)
+    self.odom_sub = rospy.Subscriber('odom', Odometry, self.odomCallback)
     self.sonar_sub = rospy.Subscriber('sonar_drive', Bool, self.sonarCallback);
     
     self.timeOfLastActivity = rospy.Time.now();
@@ -303,6 +304,7 @@ class DriveCreate2:
         self.odomRecd = True;
     self.last_odom = msg;
     quaternion = (msg.pose.pose.orientation.x,msg.pose.pose.orientation.y,msg.pose.pose.orientation.z,msg.pose.pose.orientation.w)
+#quaternion = msg.pose.pose.orientation;
     euler = tf.transformations.euler_from_quaternion(quaternion)
     self.yaw = euler[2]
 
@@ -322,7 +324,7 @@ class DriveCreate2:
             self.sendStopCmd();
 
         else:
-            self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/50.0));
+            self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/70.0));
             self.noLineCount = 0;
 
   def ctrlEffortCallback(self, err):
