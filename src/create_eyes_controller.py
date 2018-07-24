@@ -324,7 +324,11 @@ class DriveCreate2:
             self.sendStopCmd();
 
         else:
-            self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/70.0));
+#            if(abs(err.data) < 80):
+            self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/40.0));
+#            else:
+#                self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/50.0));
+
             self.noLineCount = 0;
 
   def ctrlEffortCallback(self, err):

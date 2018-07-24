@@ -1,10 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-    <!--<node name="processImage" pkg="charlie" type="processImage.py" output="screen" clear_params="true">
-        <param name="loop_rate" value="200" />
-        <param name="show_images" value="False" />
-        <param name="use_pid" value="False" />
-    </node>-->
     <node name="processImage" pkg="charlie" type="processImage" output="screen" clear_params="true">
         <param name="process_scale" value="0.25" />
         <param name="show_images" value="False" />
@@ -31,9 +26,9 @@
     <node name="controller" pkg="charlie" type="create_eyes_controller.py" output="screen" clear_params="true">
     </node>
 
-   <!-- <node name="sonarPublisher" pkg="charlie" type="sonarNode.py" output="screen" clear_params="true">
+    <node name="sonarPublisher" pkg="charlie" type="sonarNode.py" output="screen" clear_params="true">
         <param name="sampleParam" value="none" />
-    </node> -->
+    </node> 
  
 
 <!--  <node name="beeper" pkg="charlie" type="beepNode.py" output="screen" clear_params="true">
