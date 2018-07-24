@@ -39,6 +39,7 @@ class DriveCreate2:
     self.mode_pub = rospy.Publisher('iRobot_0/mode', String, queue_size = 1)
     self.tone_pub = rospy.Publisher('buzzer1/tone', Int32, queue_size = 1)
     self.dock_pub = rospy.Publisher('/dock', Empty, queue_size = 1);
+    self.undock_pub = rospy.Publisher('/undock', Empty, queue_size = 1);
     
     #GUI Variables
     self.root = Tk()
@@ -186,16 +187,30 @@ class DriveCreate2:
 
   def undock(self):
       self.timeOfLastActivity = rospy.Time.now();
-      if(not self.docked):
-          tkMessageBox.showerror("Error", "Not Docked")
-      else:
-        self.state = "UnDock";
-        self.mode_pub.publish("clean");
-        time.sleep(8.5);
-        self.mode_pub.publish("safe");
 
-        self.state = "Stop";
-        self.sendStopCmd();
+      self.undock_pub.publish();
+      time.sleep(0.3);
+      for ss in range(0,100):
+          self.smooth_drive(-0.2, 0);
+          time.sleep(0.02);
+
+      self.state = "Turn";
+      if(self.command_turn(math.pi)):
+          self.state = "Stop";
+      else:
+          self.state = "Error, Turn not successfull";
+
+
+#     if(not self.docked):
+#         tkMessageBox.showerror("Error", "Not Docked")
+#     else:
+#       self.state = "UnDock";
+#       self.mode_pub.publish("clean");
+#       time.sleep(8.5);
+#       self.mode_pub.publish("safe");
+
+#       self.state = "Stop";
+#  self.sendStopCmd();
 
   def updateLabel(self):
       self.currentStatus.set("State: " + self.state);
@@ -237,7 +252,7 @@ class DriveCreate2:
       self.twist.linear.x = self.last_drive_lin*0.5 + lin*0.5;
       self.twist.angular.z = ang;
 
-      if(self.twist.linear.x < 0.05):
+      if(self.twist.linear.x > 0 and self.twist.linear.x < 0.05):
           self.twist.linear.x = 0.0;
           
       self.cmd_vel_pub.publish(self.twist);
