@@ -9,6 +9,7 @@ from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32
 from std_msgs.msg import Float64
 from nav_msgs.msg import Odometry
+from std_msgs.msg import Empty
 from std_msgs.msg import Bool
 from std_msgs.msg import Int32
 #from irobotcreate2.msg import Battery
@@ -37,6 +38,7 @@ class DriveCreate2:
     #self.cmd_vel_pub = rospy.Publisher('raw_cmd_vel', Twist, queue_size=1)
     self.mode_pub = rospy.Publisher('iRobot_0/mode', String, queue_size = 1)
     self.tone_pub = rospy.Publisher('buzzer1/tone', Int32, queue_size = 1)
+    self.dock_pub = rospy.Publisher('/dock', Empty, queue_size = 1);
     
     #GUI Variables
     self.root = Tk()
@@ -117,7 +119,8 @@ class DriveCreate2:
     self.FOLLOW_TONE = 5;
 
     #Subscribers
-#    self.bat_sub = rospy.Subscriber('iRobot_0/battery', Battery, self.batteryCallback)
+    self.bat_sub = rospy.Subscriber('battery/charge_ratio', Float32, self.batteryCallback)
+# self.dock_sub = rospy.Subscriber('battery/charging_state', Bool, self.dockCallBack);
     self.line_visible_sub = rospy.Subscriber('line_visible', Bool, self.lineVisibleCallback)
     self.current_mode_sub = rospy.Subscriber('iRobot_0/current_mode', String, self.current_mode_callback);
     self.err_sub = rospy.Subscriber('line_error', Float32, self.errCallback)
@@ -174,6 +177,7 @@ class DriveCreate2:
 
   def dock(self):
       self.timeOfLastActivity = rospy.Time.now();
+      self.dock_pub.publish();
       if self.docked:
           tkMessageBox.showerror("Error", "Robot is Already Docked")
       else:
@@ -224,8 +228,10 @@ class DriveCreate2:
       self.current_oi_mode.set("OI Mode: " + msg.data);
 
   def batteryCallback(self,msg):
-      self.docked = msg.dock;
-      self.batteryStatus.set(str("%.2f" % round(msg.level,2))+"%, Docked: " + str(self.docked));
+        #self.docked = msg.dock;
+        #self.batteryStatus.set(str("%.2f" % round(msg.data,2))+"%, Docked: " + str(self.docked));
+      
+      self.batteryStatus.set(str("Battery: %.2f" % round(msg.data*100,2)) + "%" );
 
   def smooth_drive(self, lin, ang):
       self.twist.linear.x = self.last_drive_lin*0.5 + lin*0.5;
