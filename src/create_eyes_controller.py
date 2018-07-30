@@ -12,7 +12,6 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import Empty
 from std_msgs.msg import Bool
 from std_msgs.msg import Int32
-#from irobotcreate2.msg import Battery
 import tf
 import time
 import numpy
@@ -35,7 +34,6 @@ class DriveCreate2:
     
     #Publishers
     self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
-    #self.cmd_vel_pub = rospy.Publisher('raw_cmd_vel', Twist, queue_size=1)
     self.mode_pub = rospy.Publisher('iRobot_0/mode', String, queue_size = 1)
     self.tone_pub = rospy.Publisher('buzzer1/tone', Int32, queue_size = 1)
     self.dock_pub = rospy.Publisher('/dock', Empty, queue_size = 1);
@@ -121,11 +119,9 @@ class DriveCreate2:
 
     #Subscribers
     self.bat_sub = rospy.Subscriber('battery/charge_ratio', Float32, self.batteryCallback)
-# self.dock_sub = rospy.Subscriber('battery/charging_state', Bool, self.dockCallBack);
     self.line_visible_sub = rospy.Subscriber('line_visible', Bool, self.lineVisibleCallback)
     self.current_mode_sub = rospy.Subscriber('iRobot_0/current_mode', String, self.current_mode_callback);
     self.err_sub = rospy.Subscriber('line_error', Float32, self.errCallback)
-    self.ctrl_effort_sub = rospy.Subscriber('control_effort', Float64, self.ctrlEffortCallback);
     self.odom_sub = rospy.Subscriber('odom', Odometry, self.odomCallback)
     self.sonar_sub = rospy.Subscriber('sonar_drive', Bool, self.sonarCallback);
     
@@ -200,18 +196,6 @@ class DriveCreate2:
       else:
           self.state = "Error, Turn not successfull";
 
-
-#     if(not self.docked):
-#         tkMessageBox.showerror("Error", "Not Docked")
-#     else:
-#       self.state = "UnDock";
-#       self.mode_pub.publish("clean");
-#       time.sleep(8.5);
-#       self.mode_pub.publish("safe");
-
-#       self.state = "Stop";
-#  self.sendStopCmd();
-
   def updateLabel(self):
       self.currentStatus.set("State: " + self.state);
       self.statusLabel.update_idletasks();
@@ -229,9 +213,6 @@ class DriveCreate2:
           call(["rosservice", "call", "/raspicam_node/stop_capture"]);
           self.isAsleep = True;
           rospy.loginfo("Going to sleep");
-#self.lastPingWhileSleeping = rospy.Time.now();
-
-
 
       self.root.after(200, self.updateLabel);
  
@@ -243,9 +224,6 @@ class DriveCreate2:
       self.current_oi_mode.set("OI Mode: " + msg.data);
 
   def batteryCallback(self,msg):
-        #self.docked = msg.dock;
-        #self.batteryStatus.set(str("%.2f" % round(msg.data,2))+"%, Docked: " + str(self.docked));
-      
       self.batteryStatus.set(str("Battery: %.2f" % round(msg.data*100,2)) + "%" );
 
   def smooth_drive(self, lin, ang):
@@ -325,7 +303,6 @@ class DriveCreate2:
         self.odomRecd = True;
     self.last_odom = msg;
     quaternion = (msg.pose.pose.orientation.x,msg.pose.pose.orientation.y,msg.pose.pose.orientation.z,msg.pose.pose.orientation.w)
-#quaternion = msg.pose.pose.orientation;
     euler = tf.transformations.euler_from_quaternion(quaternion)
     self.yaw = euler[2]
 
@@ -345,24 +322,13 @@ class DriveCreate2:
             self.sendStopCmd();
 
         else:
-#            if(abs(err.data) < 80):
-            self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/40.0));
-#            else:
-#                self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/50.0));
-
+            self.smooth_drive(self.LINEAR_SPEED, (-float(err.data)/35.0));
             self.noLineCount = 0;
 
-  def ctrlEffortCallback(self, err):
-      if(self.state == "FollowLine" and self.sonar_drive and self.line_drive):
-          self.smooth_drive(self.LINEAR_SPEED, (float(err.data)/30));
-          
-          
 def main(args):
   rospy.init_node('create_eyes_controller', anonymous=True)
   ic = DriveCreate2()
   ic.root.mainloop();
-  #rospy.spin is just a blocking call, which my guy above does as well.
-#  rospy.spin();
         
 if __name__ == '__main__':
     main(sys.argv)

@@ -23,8 +23,11 @@
         <param name="v_upper" value="255" />
     </node>
     
+    <!--<node name="controller" pkg="charlie" type="controller_with_gui.py" output="screen" clear_params="true">
+    </node>-->
+    
     <node name="controller" pkg="charlie" type="create_eyes_controller.py" output="screen" clear_params="true">
-    </node>
+    </node> 
 
     <node name="sonarPublisher" pkg="charlie" type="sonarNode.py" output="screen" clear_params="true">
         <param name="sampleParam" value="none" />

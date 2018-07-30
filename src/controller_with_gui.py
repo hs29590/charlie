@@ -591,7 +591,7 @@ class DriveCreate2:
                 rospy.loginfo("Going Straight");
             
         elif(self.line_err != -1000.0):
-            self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/70.0));
+            self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/20.0));
 	    self.noLineCount = 0;
             
       print("Thread exited cleanly");
