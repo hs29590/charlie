@@ -105,13 +105,13 @@ class DriveCreate2:
     self.lineLabel.grid(row=0, column=0);
 
     self.oiModeLabel = ttk.Label(self.mainframe, textvariable=self.current_oi_mode, font=('Helvetica',12));
-    self.oiModeLabel.grid(row=14,column=0);
+    self.oiModeLabel.grid(row=15,column=0);
 
     self.sonarLabel = ttk.Label(self.mainframe, textvariable=self.sonarStatus, font=('Helvetica',12));
     self.sonarLabel.grid(row=10,column=1);
 
     self.intersectionLabel = ttk.Label(self.mainframe, textvariable=self.intersectionVisible, font=('Helvetica',12));
-    self.intersectionLabel.grid(row=13, column=0);
+    self.intersectionLabel.grid(row=14, column=0);
 
 
     #GUI Buttons
@@ -430,10 +430,12 @@ class DriveCreate2:
       return input
 
   def smooth_drive(self, lin, ang):
-      lin = self.constrain(lin, -1*self.MAX_LIN_SPEED, self.MAX_LIN_SPEED)
-      self.twist.linear.x = self.makeSimpleProfile(self.last_drive_lin, lin, self.LIN_SPEED_STEP/2.0);
+      self.twist.linear.x = 0.5*lin;
       self.twist.angular.z = ang;
-      self.last_drive_lin = self.twist.linear.x;
+#      lin = self.constrain(lin, -1*self.MAX_LIN_SPEED, self.MAX_LIN_SPEED)
+#      self.twist.linear.x = self.makeSimpleProfile(self.last_drive_lin, lin, self.LIN_SPEED_STEP/2.0);
+#      self.twist.angular.z = ang;
+#      self.last_drive_lin = self.twist.linear.x;
       #if(self.last_drive_lin > lin):
       #  self.twist.linear.x = max(self.last_drive_lin
       #self.twiist.linear.x = min(
@@ -520,7 +522,7 @@ class DriveCreate2:
 
   def runThreadFunc(self):
       while not rospy.is_shutdown():
-        time.sleep(0.005);
+        time.sleep(0.03);
 
         if not self.sonar_drive:
                   self.sendStopCmd();
