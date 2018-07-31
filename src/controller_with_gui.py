@@ -466,7 +466,11 @@ class DriveCreate2:
       current = starting;
       rospy.loginfo("Starting Turning: Current(Starting):" + str(current) + " Desired:" + str(desired));
 
+      turn_direction = 1;
+
       if(desired > starting):
+          if(desired - starting > math.pi):
+              turn_direction = -1;
           t_end = time.time() + 30;
           while(self.state == "Turn"):
               self.smooth_drive(0.0,0.5);
@@ -486,6 +490,8 @@ class DriveCreate2:
                   break;
       elif(desired < starting):
           t_end = time.time() + 30;
+          if(starting - desired > math.pi):
+              turn_direction = -1;
           while(self.state == "Turn"):
               self.smooth_drive(0.0,-0.5);
               time.sleep(0.001);
