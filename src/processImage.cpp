@@ -247,22 +247,23 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
             cv::waitKey(3);
         }
 
-        num_white_px = cv::countNonZero(bgr_mask);
-        if(num_white_px > 30)
-        {
-            intersection_seen_count++;
-            no_intersection_count = 0;
-        }
-        else
-        {
-            intersection_seen_count = 0;
-            no_intersection_count++;
-        }
+        //num_white_px = cv::countNonZero(bgr_mask);
+        //if(num_white_px > 30)
+       // {
+        //    intersection_seen_count++;
+        //    no_intersection_count = 0;
+       // }
+       // else
+       // {
+        //    intersection_seen_count = 0;
+        //    no_intersection_count++;
+        //}
 
-        if(intersection_seen_count > 5)
+       // if(intersection_seen_count > 5)
         {
             cv::Moments mu = cv::moments(bgr_mask, false);
-            if(mu.m00 > 0)
+//            std::cout << mu.m00 << std::endl;
+            if(mu.m00 > 15000)
             {
                 cx = (float)mu.m10/mu.m00;
                 cy = (float)mu.m01/mu.m00;
@@ -277,11 +278,11 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
             intersection_err_pub.publish(intersection_err);
             }
         }
-        else if(no_intersection_count >= 10)
-        {
-            intersection_err.data = -1000.0;
-            intersection_err_pub.publish(intersection_err);
-        }
+        //else if(no_intersection_count >= 10)
+       // {
+       //     intersection_err.data = -1000.0;
+       //     intersection_err_pub.publish(intersection_err);
+       // }
     }
     //double end_sec =ros::Time::now().toSec();
     //ROS_INFO_THROTTLE(5, "Time Taken: %lf sec", end_sec - start_sec);
