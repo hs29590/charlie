@@ -185,7 +185,7 @@ class DriveCreate2:
 
     self.runThread = threading.Thread(target=self.runThreadFunc)
     self.runThread.daemon = True
-      
+
     
 
   def dstpopup(self):
@@ -286,6 +286,8 @@ class DriveCreate2:
       rospy.loginfo("Published Start..");
       
   def goAhead(self):
+      self.state = "Turn";
+      self.command_turn(math.pi/2);
       if(self.isAsleep):
           call(["rosservice", "call", "/raspicam_node/start_capture"]);
           self.isAsleep = False;
@@ -298,15 +300,20 @@ class DriveCreate2:
           self.mode_pub.publish("safe");
           self.state = "FollowLine";
 
-      self.pathPlanner.calculatePath();
-      print("Path returned with length: ");
-      print("Source Selected: " + self.sourceSelected);
-      print("Destination Selected: " + self.destinationSelected);
+      if(self.sourceSelected is not None):
+          print("Source Selected: " + self.sourceSelected);
+      if(self.destinationSelected is not None):
+         print("Destination Selected: " + self.destinationSelected);
 
-      self.currentPath = self.pathPlanner.getLeftRightTurnList();
-      self.currentPathIndex = 1;
-      print(self.pathPlanner.getLeftRightTurnList()); 
-      print(self.pathPlanner.getNodeList()); 
+      if(self.sourceSelected is not None and self.destinationSelected is not None):
+          self.pathPlanner.calculatePath();
+          print("Path returned with length: ");
+          self.currentPath = self.pathPlanner.getLeftRightTurnList();
+          self.currentPathIndex = 1;
+          print(self.pathPlanner.getLeftRightTurnList()); 
+          print(self.pathPlanner.getNodeList()); 
+      else:
+          rospy.logwarn("Either Source or Destination is not set");
 
   def turnAndGo(self):
       if(self.isAsleep):
@@ -325,13 +332,21 @@ class DriveCreate2:
           else:
               self.state = "Error, Turn not successfull";
       
-      self.pathPlanner.calculatePath();
-      print("Path returned with length: ");
-      self.currentPath = self.pathPlanner.getLeftRightTurnList();
-      self.currentPathIndex = 1;
-      print(self.pathPlanner.getLeftRightTurnList()); 
-      print(self.pathPlanner.getNodeList()); 
-              
+      if(self.sourceSelected is not None):
+          print("Source Selected: " + self.sourceSelected);
+      if(self.destinationSelected is not None):
+         print("Destination Selected: " + self.destinationSelected);
+
+      if(self.sourceSelected is not None and self.destinationSelected is not None):
+          self.pathPlanner.calculatePath();
+          print("Path returned with length: ");
+          self.currentPath = self.pathPlanner.getLeftRightTurnList();
+          self.currentPathIndex = 1;
+          print(self.pathPlanner.getLeftRightTurnList()); 
+          print(self.pathPlanner.getNodeList()); 
+      else:
+          rospy.logwarn("Either Source or Destination is not set");
+      
   def Stop(self):
       self.timeOfLastActivity = rospy.Time.now();
       self.state = "Stop";
@@ -472,13 +487,13 @@ class DriveCreate2:
           if(desired - starting > math.pi):
               turn_direction = -1;
           t_end = time.time() + 30;
-          while(self.state == "Turn"):
-              self.smooth_drive(0.0,0.5);
-              time.sleep(0.01);
+          while(self.state == "Turn" and not rospy.is_shutdown()):
+              self.smooth_drive(0.0,turn_direction*0.2);
+              time.sleep(0.001);
               current = self.yaw;
               #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
               rospy.loginfo("des > sta - Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
-              if(current > desired or current < starting):
+              if(current - desired > 0.01 or starting - current > 0.01):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
                   return True;
@@ -492,12 +507,12 @@ class DriveCreate2:
           t_end = time.time() + 30;
           if(starting - desired > math.pi):
               turn_direction = -1;
-          while(self.state == "Turn"):
-              self.smooth_drive(0.0,-0.5);
+          while(self.state == "Turn" and not rospy.is_shutdown()):
+              self.smooth_drive(0.0,-1*turn_direction*0.2);
               time.sleep(0.001);
               current = self.yaw;
-              rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
-              if(current < desired or current > starting):
+              rospy.loginfo("des < sta Turning: Current: " + str(current) + " Desired: " + str(desired) +  " Starting:" + str(starting));
+              if(desired - current > 0.01 or current - starting > 0.01):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
                   return True;
