@@ -163,14 +163,14 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
     // Apply erosion or dilation on the image
   //  cv::erode(bgr_mask,bgr_mask,kernel);
 
-  //  cv::Rect rect((int)cv_ptr->image.size().width/8,
-  //          0,
-  //          (int)6*cv_ptr->image.size().width/8,
-  //          (int)2*cv_ptr->image.size().height/3);
+    cv::Rect rect(0,
+            0,
+            (int)cv_ptr->image.size().width,
+            (int)2*cv_ptr->image.size().height/3);
 
 
-//    Mat roi = bgr_mask(rect);
-    Mat roi = bgr_mask;
+    Mat roi = bgr_mask(rect);
+//    Mat roi = bgr_mask;
     
     if(m_show_images)
     {
@@ -217,11 +217,12 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         //checks red intersections
         try
         {
-            cv::inRange(hsvImg, cv::Scalar(170,0,0), 
+            Mat thisRoi = hsvImg(rect);
+            cv::inRange(thisRoi, cv::Scalar(170,0,0), 
                     cv::Scalar(180,255,255),
                     hsv_mask);
 
-            cv::inRange(hsvImg, cv::Scalar(0,0,0),
+            cv::inRange(thisRoi, cv::Scalar(0,0,0),
                     cv::Scalar(10,255,255),
                     bgr_mask);
 
