@@ -62,6 +62,9 @@ class DriveCreate2:
     
     self.intersectionVisible = StringVar();
     self.intersectionVisible.set("Intersection: False");
+
+    self.nextTurnVariable = StringVar();
+    self.nextTurnVariable.set("NA");
     
     self.lineVisible = StringVar();
     self.lineVisible.set("Line: False");
@@ -113,6 +116,8 @@ class DriveCreate2:
     self.intersectionLabel = ttk.Label(self.mainframe, textvariable=self.intersectionVisible, font=('Helvetica',12));
     self.intersectionLabel.grid(row=14, column=0);
 
+    self.nextTurnLabel = ttk.Label(self.mainframe, textvariable=self.nextTurnVariable, font=('Helvetica',10));
+    self.nextTurnLabel.grid(row=10,column=0);
 
     #GUI Buttons
 
@@ -128,7 +133,9 @@ class DriveCreate2:
     ttk.Button(self.mainframe, text="FROM", style='my.TButton', command=self.selectSource, width = 16).grid(row=8,column=0, pady=10)
     ttk.Button(self.mainframe, text="TO", style='my.TButton', command=self.selectDestination, width = 16).grid(row=8,column=1, pady=10)
 
-    ttk.Button(self.mainframe, text="Reset", style='my.TButton', command=self.resetPressed, width=16).grid(row=10, column=0, pady=5)
+    #ttk.Button(self.mainframe, text="Reset", style='my.TButton', command=self.resetPressed, width=16).grid(row=10, column=0, pady=5)
+
+
     
     self.sourceDestinationLabel = ttk.Label(self.mainframe, textvariable=self.sourceDestinationVar, font=('Helvetica',12));
     self.sourceDestinationLabel.grid(row=0, column=1);
@@ -179,6 +186,7 @@ class DriveCreate2:
     self.intersection_sub = rospy.Subscriber('/intersection_err', Float32, self.intersectionCallback); 
    
     self.timeOfLastActivity = rospy.Time.now();
+    self.timeOfLastIntersection = rospy.Time.now();
 
     self.sourceSelected = None;
     self.destinationSelected = None;
@@ -308,6 +316,7 @@ class DriveCreate2:
           print("Path returned with length: ");
           self.currentPath = self.pathPlanner.getLeftRightTurnList();
           self.currentPathIndex = 1;
+          self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
           print(self.pathPlanner.getLeftRightTurnList()); 
           print(self.pathPlanner.getNodeList()); 
       else:
@@ -340,6 +349,7 @@ class DriveCreate2:
           print("Path returned with length: ");
           self.currentPath = self.pathPlanner.getLeftRightTurnList();
           self.currentPathIndex = 1;
+          self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
           print(self.pathPlanner.getLeftRightTurnList()); 
           print(self.pathPlanner.getNodeList()); 
       else:
@@ -383,6 +393,7 @@ class DriveCreate2:
       self.lineLabel.update_idletasks();
       self.oiModeLabel.update_idletasks();
       self.sonarLabel.update_idletasks();
+      self.nextTurnLabel.update_idletasks();
       self.intersectionLabel.update_idletasks();
       self.intersectionVisible.set("Intersection: " + str(self.intersection_err));
 
@@ -551,7 +562,6 @@ class DriveCreate2:
 	
 	if(self.state == "Stop"):
 	    self.sendStopCmd();
-
       
 	if(self.line_err == -1000.0):
 	    self.noLineCount = self.noLineCount + 1;
@@ -567,7 +577,6 @@ class DriveCreate2:
                 self.smooth_drive(0.3, (-float(self.intersection_err)/60.0));
             rospy.loginfo("[Intersection] Sent Stop cmd");
             nextTurn = self.currentPath[self.currentPathIndex];
-            self.currentPathIndex = self.currentPathIndex + 1;
             rospy.loginfo("Next Turn is: " + nextTurn); 
             if(nextTurn == 'E'):
                 self.sendStopCmd();
@@ -625,6 +634,9 @@ class DriveCreate2:
             elif(nextTurn == 'S'):
                 self.smooth_drive(0.4, (-float(self.line_err)/40.0));
                 rospy.loginfo("Going Straight");
+            
+            self.currentPathIndex = self.currentPathIndex + 1;
+            self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
             
         elif(self.line_err != -1000.0):
             self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/40.0));

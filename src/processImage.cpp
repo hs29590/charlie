@@ -248,19 +248,19 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
             cv::waitKey(3);
         }
 
-        //num_white_px = cv::countNonZero(bgr_mask);
-        //if(num_white_px > 30)
-       // {
-        //    intersection_seen_count++;
-        //    no_intersection_count = 0;
-       // }
-       // else
-       // {
-        //    intersection_seen_count = 0;
-        //    no_intersection_count++;
-        //}
+        num_white_px = cv::countNonZero(bgr_mask);
+        if(num_white_px > 30)
+        {
+            intersection_seen_count++;
+            no_intersection_count = 0;
+        }
+       else
+        {
+            intersection_seen_count = 0;
+            no_intersection_count++;
+        }
 
-       // if(intersection_seen_count > 5)
+        if(intersection_seen_count > 5)
         {
             cv::Moments mu = cv::moments(bgr_mask, false);
 //            std::cout << mu.m00 << std::endl;
