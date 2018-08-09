@@ -123,14 +123,11 @@ class DriveCreate2:
     ttk.Button(self.mainframe, text="Dock", style='my.TButton', command=self.dock, width = 16).grid(row=8,column=0, pady=15)
     ttk.Button(self.mainframe, text="Un-Dock", style='my.TButton', command=self.undock, width = 16).grid(row=8,column=1, pady=15)
 
-<<<<<<< Updated upstream
     ttk.Button(self.mainframe, text="SOURCE", style='my.TButton', command=self.selectSource, width = 16).grid(row=13,column=0, pady=15)
     ttk.Button(self.mainframe, text="DESTINATION", style='my.TButton', command=self.selectDestination, width = 16).grid(row=13,column=1, pady=15)
 
-    ttk.Button(self.mainframe, text="Reset", style='my.TButton', command=self.resetPressed, width=16).grid(row=10, column=0, pady=5)
+    #ttk.Button(self.mainframe, text="Reset", style='my.TButton', command=self.resetPressed, width=16).grid(row=10, column=0, pady=5)
     
-=======
->>>>>>> Stashed changes
     self.sourceDestinationLabel = ttk.Label(self.mainframe, textvariable=self.sourceDestinationVar, font=('Helvetica',12));
     self.sourceDestinationLabel.grid(row=10, column=1);
 
@@ -415,21 +412,8 @@ class DriveCreate2:
       self.batteryStatus.set(str("%.2f" % round(msg.level,2))+"%, Docked: " + str(self.docked));
 
   def smooth_drive(self, lin, ang):
-      self.twist.linear.x = self.last_drive_lin*0.5 + lin*0.5;
-      self.twist.angular.z = self.last_drive_ang*0.5 + ang*0.5;
-
-      self.last_drive_lin = self.twist.linear.x;
-      self.last_drive_ang = self.twist.angular.z;
-
-<<<<<<< Updated upstream
-      if(self.twist.linear.x < 0.05):
-          self.twist.linear.x = 0.0;
-          
-=======
-  def smooth_drive(self, lin, ang):
       self.twist.linear.x = 0.5*lin;
       self.twist.angular.z = ang;
->>>>>>> Stashed changes
       self.cmd_vel_pub.publish(self.twist);
 
   def sonarCallback(self, msg):
@@ -537,35 +521,14 @@ class DriveCreate2:
             self.currentPathIndex = self.currentPathIndex + 1;
             rospy.loginfo("Next Turn is: " + nextTurn); 
             if(nextTurn == 'E'):
-<<<<<<< Updated upstream
-=======
                 for stpCnter in range(50):
                     self.smooth_drive(0.2, 0);
                     time.sleep(0.02);
                 self.sendStopCmd();
->>>>>>> Stashed changes
                 rospy.loginfo("Stopping at end");
                 self.sendStopCmd();
                 self.state = "Stop";
-<<<<<<< Updated upstream
-            elif(nextTurn == 'L'):
-                rospy.loginfo("Turning Left");
-                t_end = time.time() + self.TIME_FOR_TURNING; 
-                while(time.time() < t_end and self.left_line_err != -1000.0):
-                    self.smooth_drive(self.LINEAR_SPEED, (-float(self.left_line_err)/30.0));
-                    time.sleep(0.02);
-                self.state = "FollowLine";
-                rospy.loginfo("I Turned Left");
-            elif(nextTurn == 'R'):
-                rospy.loginfo("Turning Right");
-                t_end = time.time() + self.TIME_FOR_TURNING; 
-                while(time.time() < t_end and self.right_line_err != -1000.0):
-                    self.smooth_drive(self.LINEAR_SPEED, (-float(self.right_line_err)/30.0));
-                    time.sleep(0.02);
-                self.state = "FollowLine";
-                rospy.loginfo("I Turned Right");
-=======
-
+            
             elif(nextTurn == 'L' or nextTurn == 'R'):
                 turnSign = 1;
                 if(nextTurn == 'R'):
@@ -584,15 +547,11 @@ class DriveCreate2:
                     self.state = "Error, Turn not successfull";
                     rospy.loginfo("Turn failed");
 
->>>>>>> Stashed changes
             elif(nextTurn == 'S'):
                 rospy.loginfo("Going Straight");
             
-<<<<<<< Updated upstream
-=======
             self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
             
->>>>>>> Stashed changes
         elif(self.line_err != -1000.0):
             self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/40.0));
 	    self.noLineCount = 0;

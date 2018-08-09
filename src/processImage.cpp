@@ -34,7 +34,6 @@ class ImageInfoExtractor
 
         float m_prev_cx;
         bool m_show_images;
-        bool m_check_left_right_line_err;
         Mat kernel;
 
         zbar::ImageScanner scanner; //QR Code Scanner
@@ -48,18 +47,11 @@ class ImageInfoExtractor
         ros::Publisher err_pub;
         ros::Publisher line_visible_pub;
         ros::Publisher intersection_err_pub;
-<<<<<<< Updated upstream
-        ros::Publisher left_image_err_pub;
-        ros::Publisher right_image_err_pub;
-=======
         ros::Publisher tagsPublisher;
->>>>>>> Stashed changes
 
         float process_scale;
 
         std_msgs::Float32 err;
-        std_msgs::Float32 left_line_err;
-        std_msgs::Float32 right_line_err;
         std_msgs::Float32 intersection_err;
         std_msgs::Bool line_visible;
 
@@ -176,29 +168,10 @@ void ImageInfoExtractor::publishLineErr(cv_bridge::CvImagePtr cv_ptr)
     dilate(bgr_mask,bgr_mask,dilateElement);
     dilate(bgr_mask,bgr_mask,dilateElement);
 
-<<<<<<< Updated upstream
-//    cv::GaussianBlur( bgr_mask, bgr_mask, cv::Size( 5, 5 ), 0, 0 );
-
-    // Apply erosion or dilation on the image
-  //  cv::erode(bgr_mask,bgr_mask,kernel);
-
-    cv::Rect rect((int)cv_ptr->image.size().width/4,
-            0,
-            (int)cv_ptr->image.size().width/2,
-            (int)2*cv_ptr->image.size().height/3);
-=======
->>>>>>> Stashed changes
-
-
 
     Mat roi = bgr_mask(rect);
-<<<<<<< Updated upstream
-    Mat roi_left = roi.clone();
-    
-=======
     //    Mat roi = bgr_mask;
 
->>>>>>> Stashed changes
     if(m_show_images)
     {
         cv::imshow("Fin Mask", roi);
@@ -212,20 +185,7 @@ void ImageInfoExtractor::publishLineErr(cv_bridge::CvImagePtr cv_ptr)
         cx = (float)mu.m10/mu.m00;
         cy = (float)mu.m01/mu.m00;
 
-<<<<<<< Updated upstream
-        ROS_INFO("moment: %f\n",mu.m00);
-
-        cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(255,0,0), 4);
-        
-        cx = m_prev_cx*0.5 + cx;
-        m_prev_cx = cx;
-=======
-        // cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(255,0,0), 4);
-
         cv::circle(cv_ptr->image, cv::Point((int)cx,(int)cy), 10,  CV_RGB(255,0,0), 4);
-        //     cx = m_prev_cx*0.5 + cx;
-        //     m_prev_cx = cx;
->>>>>>> Stashed changes
 
         err.data = (cx - (float)(roi.size().width)/2.0);
         err_pub.publish(err);
@@ -244,60 +204,6 @@ void ImageInfoExtractor::publishLineErr(cv_bridge::CvImagePtr cv_ptr)
         line_visible_pub.publish(line_visible);
     }
 
-    if(m_check_left_right_line_err)
-    {
-        cv::Rect left_rect(0, 0, (int)roi.size().width/2, roi.size().height);
-        cv::Rect right_rect((int)roi.size().width/2, 0, (int)roi.size().width/2, roi.size().height);
-        roi(left_rect) = 0;
-        if(m_show_images)
-        {
-            cv::imshow("ROI only right", roi);
-            cv::waitKey(3);
-        }
-        mu = cv::moments(roi, false);
-        if(mu.m00 > 100)
-        {
-            cx = (float)mu.m10/mu.m00;
-            cy = (float)mu.m01/mu.m00;
-            
-            cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(0,0,255), 4);
-
-            right_line_err.data = (cx - (float)(roi.size().width)/2.0);
-            right_image_err_pub.publish(right_line_err);
-        }
-        else
-        {
-            right_line_err.data = -1000.0;
-            right_image_err_pub.publish(right_line_err);
-        }
-        
-        roi_left(right_rect) = 0; // for the left image, make the right pixels black
-        if(m_show_images)
-        {
-            cv::imshow("ROI only left", roi_left);
-            cv::waitKey(3);
-        }
-        mu = cv::moments(roi_left, false);
-        if(mu.m00 > 100)
-        {
-            cx = (float)mu.m10/mu.m00;
-            cy = (float)mu.m01/mu.m00;
-        
-            cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(0,255,0), 4);
-
-            left_line_err.data = (cx - (float)(roi_left.size().width)/2.0);
-            left_image_err_pub.publish(left_line_err);
-        }
-        else
-        {
-            left_line_err.data = -1000.0;
-            left_image_err_pub.publish(left_line_err);
-        }
-
-    }
-
-
-
     if(m_show_images)
     {
         cv::imshow("Fin Img", cv_ptr->image);
@@ -313,18 +219,6 @@ void ImageInfoExtractor::publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr)
     //checks red intersections
     try
     {
-<<<<<<< Updated upstream
-        //checks red intersections
-        try
-        {
-            cv::inRange(hsvImg, cv::Scalar(170,0,0), 
-                    cv::Scalar(180,255,255),
-                    hsv_mask);
-
-            cv::inRange(hsvImg, cv::Scalar(0,0,0),
-                    cv::Scalar(10,255,255),
-                    bgr_mask);
-=======
         Mat thisRoi = hsvImg(rect);
         cv::inRange(thisRoi, cv::Scalar(170,0,0), 
                 cv::Scalar(180,255,255),
@@ -333,7 +227,6 @@ void ImageInfoExtractor::publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr)
         cv::inRange(thisRoi, cv::Scalar(0,0,0),
                 cv::Scalar(10,255,255),
                 bgr_mask);
->>>>>>> Stashed changes
 
         cv::bitwise_or(bgr_mask, hsv_mask, bgr_mask);
 
@@ -357,15 +250,6 @@ void ImageInfoExtractor::publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr)
         cv::waitKey(3);
     }
 
-<<<<<<< Updated upstream
-        num_white_px = cv::countNonZero(bgr_mask);
-        if(num_white_px > 30)
-        {
-            intersection_seen_count++;
-            no_intersection_count = 0;
-        }
-        else
-=======
     num_white_px = cv::countNonZero(bgr_mask);
     if(num_white_px > 30)
     {
@@ -383,7 +267,6 @@ void ImageInfoExtractor::publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr)
         cv::Moments mu = cv::moments(bgr_mask, false);
         //            std::cout << mu.m00 << std::endl;
         if(mu.m00 > 15000)
->>>>>>> Stashed changes
         {
             cx = (float)mu.m10/mu.m00;
             cy = (float)mu.m01/mu.m00;
@@ -393,32 +276,10 @@ void ImageInfoExtractor::publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr)
         }
         else
         {
-<<<<<<< Updated upstream
-            cv::Moments mu = cv::moments(bgr_mask, false);
-            if(mu.m00 > 0)
-            {
-                cx = (float)mu.m10/mu.m00;
-                cy = (float)mu.m01/mu.m00;
-
-                intersection_err.data = ((cx - (float)(cv_ptr->image.size().width)/2.0));
-                intersection_err_pub.publish(intersection_err);
-            }
-            else
-            {
-=======
->>>>>>> Stashed changes
             //    ROS_ERROR("No Moment found while calculating moment for intersection..");
             intersection_err.data = -1000.0;
             intersection_err_pub.publish(intersection_err);
         }
-<<<<<<< Updated upstream
-        else if(no_intersection_count >= 10)
-        {
-            intersection_err.data = -1000.0;
-            intersection_err_pub.publish(intersection_err);
-        }
-=======
->>>>>>> Stashed changes
     }
     //else if(no_intersection_count >= 10)
     // {
@@ -509,30 +370,14 @@ int main(int argc, char** argv) {
 
     ROS_INFO("process scale: %f", imageInfoExtractor.process_scale);
 
-<<<<<<< Updated upstream
-    //std::string s;
-    //n.param<std::string>("my_param", s, "default_value");
-    
-    nodeh.param("/processImage/show_images", imageInfoExtractor.m_show_images, true);
-    ROS_INFO("Show Images: %d\n", (imageInfoExtractor.m_show_images));
-
-    nodeh.param("/processImage/check_left_right_line_err", imageInfoExtractor.m_check_left_right_line_err, true);
-    ROS_INFO("Check Left Right Line Err: %d\n", (imageInfoExtractor.m_check_left_right_line_err));
-
-    nodeh.param("/processImage/check_intersections", imageInfoExtractor.check_intersections, true);
-
-=======
     nodeh.param("/processImage/show_images", imageInfoExtractor.m_show_images, false);
     ROS_INFO("Show Images: %d\n", (imageInfoExtractor.m_show_images));
 
     imageInfoExtractor.tagsPublisher = nodeh.advertise<std_msgs::String>("/qr_codes", 10);
->>>>>>> Stashed changes
 
     imageInfoExtractor.err_pub = nodeh.advertise<std_msgs::Float32>("/line_error", 1);
     imageInfoExtractor.line_visible_pub = nodeh.advertise<std_msgs::Bool>("/line_visible", 1);
     imageInfoExtractor.intersection_err_pub = nodeh.advertise<std_msgs::Float32>("/intersection_err", 1);
-    imageInfoExtractor.left_image_err_pub = nodeh.advertise<std_msgs::Float32>("/left_line_err", 1);
-    imageInfoExtractor.right_image_err_pub = nodeh.advertise<std_msgs::Float32>("/right_line_err", 1);
     ros::Subscriber img_sub = nodeh.subscribe("/raspicam_node/image_raw", 1, &ImageInfoExtractor::imgCallback, &imageInfoExtractor);
 
     ros::spin();
