@@ -9,6 +9,15 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
+#include "zbar.h"
+
+struct Tag
+{
+    std::string message;
+    std::vector<cv::Point> polygon;
+};
+
+using Tags = std::vector<Tag>;
 
 
 using namespace cv;
@@ -17,35 +26,7 @@ using namespace std;
 class ImageInfoExtractor
 {
     public:
-        ImageInfoExtractor()
-        {
-            m_prev_cx = 0;
-            m_show_images = false;
-            kernel = Mat::ones( 3, 3, CV_8U );
-            check_intersections = true;
-            bgr_color_lower[0] = bgr_color_lower[1] = bgr_color_lower[2] = 0;
-            hsv_color_lower[0] = hsv_color_lower[1] = hsv_color_lower[2] = 0;
-            
-            bgr_color_upper[0] = bgr_color_upper[1] = bgr_color_upper[2] = 0;
-            hsv_color_upper[0] = hsv_color_upper[1] = hsv_color_upper[2] = 0;
-            
-            process_scale = 0.25;
-
-            num_white_px = 0;
-
-            //min_object_area = 10*10;
-            err.data = -1000.0;
-            intersection_err.data = -1000.0;
-
-            no_intersection_count = 0;
-            intersection_seen_count = 0;
-
-            no_line_count = 0;
-            cx = cy = 0.0;
-            erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
-            dilateElement = getStructuringElement( MORPH_RECT,Size(6,6));
-        }
-
+        ImageInfoExtractor();
 
         ~ImageInfoExtractor()
         {
@@ -55,7 +36,9 @@ class ImageInfoExtractor
         bool m_show_images;
         bool m_check_left_right_line_err;
         Mat kernel;
-        
+
+        zbar::ImageScanner scanner; //QR Code Scanner
+
         int bgr_color_lower[3];
         int bgr_color_upper[3];
 
@@ -65,8 +48,12 @@ class ImageInfoExtractor
         ros::Publisher err_pub;
         ros::Publisher line_visible_pub;
         ros::Publisher intersection_err_pub;
+<<<<<<< Updated upstream
         ros::Publisher left_image_err_pub;
         ros::Publisher right_image_err_pub;
+=======
+        ros::Publisher tagsPublisher;
+>>>>>>> Stashed changes
 
         float process_scale;
 
@@ -79,39 +66,66 @@ class ImageInfoExtractor
         float cx;
         float cy;
 
-        bool check_intersections;
         int intersection_seen_count;
         int no_intersection_count;
         int num_white_px;
         int no_line_count;
 
+        bool checkLine;
+        bool checkIntersection;
+        bool checkQRCode;
+
         Mat hsv_mask;
         Mat hsvImg;
         Mat bgr_mask;
-	    Mat erodeElement;
+        Mat erodeElement;
         //dilate with larger element so make sure object is nicely visible
-    	Mat dilateElement;
+        Mat dilateElement;
 
         void imgCallback(const sensor_msgs::ImageConstPtr& msg);
-
+        void publishLineErr(cv_bridge::CvImagePtr cv_ptr);
+        void publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr);
+        void publishQRCode(cv_bridge::CvImagePtr cv_ptr);
 };
 
-void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
+
+ImageInfoExtractor::ImageInfoExtractor() : scanner()
 {
-//    double start_sec =ros::Time::now().toSec();
-    cv_bridge::CvImagePtr cv_ptr;
-    try
-    {
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
+    m_prev_cx = 0;
+    m_show_images = false;
+    kernel = Mat::ones( 3, 3, CV_8U );
+    bgr_color_lower[0] = bgr_color_lower[1] = bgr_color_lower[2] = 0;
+    hsv_color_lower[0] = hsv_color_lower[1] = hsv_color_lower[2] = 0;
 
-    cv::resize(cv_ptr->image, cv_ptr->image, cv::Size(), process_scale, process_scale);
+    bgr_color_upper[0] = bgr_color_upper[1] = bgr_color_upper[2] = 0;
+    hsv_color_upper[0] = hsv_color_upper[1] = hsv_color_upper[2] = 0;
 
+    process_scale = 0.25;
+
+    num_white_px = 0;
+
+    err.data = -1000.0;
+    intersection_err.data = -1000.0;
+
+    no_intersection_count = 0;
+    intersection_seen_count = 0;
+
+    checkLine = true;
+    checkIntersection = true;
+    checkQRCode = true;
+
+    no_line_count = 0;
+    cx = cy = 0.0;
+    erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
+    dilateElement = getStructuringElement( MORPH_RECT,Size(6,6));
+
+    scanner.set_config(zbar::ZBAR_NONE, zbar::ZBAR_CFG_ENABLE, 1);
+}
+
+void ImageInfoExtractor::publishLineErr(cv_bridge::CvImagePtr cv_ptr)
+{
+    //Area to exclude in the image
+    cv::Rect rect(0, 0, (int)cv_ptr->image.size().width, (int)2*cv_ptr->image.size().height/3);
     try
     {
         cv::cvtColor(cv_ptr->image, hsvImg, cv::COLOR_BGR2HSV);
@@ -124,10 +138,9 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
 
     hsv_mask = Mat::zeros(cv_ptr->image.size(), cv_ptr->image.type());
     cv::inRange(hsvImg, cv::Scalar(hsv_color_lower[0], hsv_color_lower[1], hsv_color_lower[2]), 
-                        cv::Scalar(hsv_color_upper[0], hsv_color_upper[1], hsv_color_upper[2]),
-                        hsv_mask);
-    
-    //cv::erode(hsv_mask,hsv_mask,kernel);
+            cv::Scalar(hsv_color_upper[0], hsv_color_upper[1], hsv_color_upper[2]),
+            hsv_mask);
+
     cv::GaussianBlur( hsv_mask, hsv_mask, cv::Size( 5, 5 ), 0, 0 );
 
     if(m_show_images)
@@ -135,11 +148,11 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         cv::imshow("hsv mask", hsv_mask);
         cv::waitKey(3);
     }
-    
+
     bgr_mask = Mat::zeros(cv_ptr->image.size(), cv_ptr->image.type());
     cv::inRange(cv_ptr->image, cv::Scalar(bgr_color_lower[0], bgr_color_lower[1], bgr_color_lower[2]), 
-                               cv::Scalar(bgr_color_upper[0], bgr_color_upper[1], bgr_color_upper[2]), 
-                               bgr_mask);
+            cv::Scalar(bgr_color_upper[0], bgr_color_upper[1], bgr_color_upper[2]), 
+            bgr_mask);
     if(m_show_images)
     {
         cv::imshow("bgr mask", bgr_mask);
@@ -157,12 +170,13 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         return;
     }
 
-	erode(bgr_mask,bgr_mask,erodeElement);
-	erode(bgr_mask,bgr_mask,erodeElement);
+    erode(bgr_mask,bgr_mask,erodeElement);
+    erode(bgr_mask,bgr_mask,erodeElement);
 
-	dilate(bgr_mask,bgr_mask,dilateElement);
-	dilate(bgr_mask,bgr_mask,dilateElement);
+    dilate(bgr_mask,bgr_mask,dilateElement);
+    dilate(bgr_mask,bgr_mask,dilateElement);
 
+<<<<<<< Updated upstream
 //    cv::GaussianBlur( bgr_mask, bgr_mask, cv::Size( 5, 5 ), 0, 0 );
 
     // Apply erosion or dilation on the image
@@ -172,18 +186,25 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
             0,
             (int)cv_ptr->image.size().width/2,
             (int)2*cv_ptr->image.size().height/3);
+=======
+>>>>>>> Stashed changes
 
 
 
     Mat roi = bgr_mask(rect);
+<<<<<<< Updated upstream
     Mat roi_left = roi.clone();
     
+=======
+    //    Mat roi = bgr_mask;
+
+>>>>>>> Stashed changes
     if(m_show_images)
     {
         cv::imshow("Fin Mask", roi);
         cv::waitKey(3);
     }
-    
+
     //Get the moments of the mask to get general direction of the line
     cv::Moments mu = cv::moments(roi, false);
     if(mu.m00 > 15000)
@@ -191,12 +212,20 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         cx = (float)mu.m10/mu.m00;
         cy = (float)mu.m01/mu.m00;
 
+<<<<<<< Updated upstream
         ROS_INFO("moment: %f\n",mu.m00);
 
         cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(255,0,0), 4);
         
         cx = m_prev_cx*0.5 + cx;
         m_prev_cx = cx;
+=======
+        // cv::circle(cv_ptr->image, cv::Point((int)cx + (int)cv_ptr->image.size().width/4,(int)cy), 10,  CV_RGB(255,0,0), 4);
+
+        cv::circle(cv_ptr->image, cv::Point((int)cx,(int)cy), 10,  CV_RGB(255,0,0), 4);
+        //     cx = m_prev_cx*0.5 + cx;
+        //     m_prev_cx = cx;
+>>>>>>> Stashed changes
 
         err.data = (cx - (float)(roi.size().width)/2.0);
         err_pub.publish(err);
@@ -274,8 +303,17 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         cv::imshow("Fin Img", cv_ptr->image);
         cv::waitKey(3);
     }
-    if(check_intersections)
+}
+
+void ImageInfoExtractor::publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr)
+{
+    //Area to exclude in the image
+    cv::Rect rect(0, 0, (int)cv_ptr->image.size().width, (int)2*cv_ptr->image.size().height/3);
+
+    //checks red intersections
+    try
     {
+<<<<<<< Updated upstream
         //checks red intersections
         try
         {
@@ -286,29 +324,40 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
             cv::inRange(hsvImg, cv::Scalar(0,0,0),
                     cv::Scalar(10,255,255),
                     bgr_mask);
+=======
+        Mat thisRoi = hsvImg(rect);
+        cv::inRange(thisRoi, cv::Scalar(170,0,0), 
+                cv::Scalar(180,255,255),
+                hsv_mask);
 
-            cv::bitwise_or(bgr_mask, hsv_mask, bgr_mask);
+        cv::inRange(thisRoi, cv::Scalar(0,0,0),
+                cv::Scalar(10,255,255),
+                bgr_mask);
+>>>>>>> Stashed changes
 
-   //         cv::erode(bgr_mask,bgr_mask,kernel);
-        	erode(bgr_mask,bgr_mask,erodeElement);
-        	erode(bgr_mask,bgr_mask,erodeElement);
+        cv::bitwise_or(bgr_mask, hsv_mask, bgr_mask);
 
-        	dilate(bgr_mask,bgr_mask,dilateElement);
-        	dilate(bgr_mask,bgr_mask,dilateElement);
-        }
-        catch (cv::Exception& e)
-        {
-            ROS_ERROR("cv_bridge exception: %s", e.what());
-            return;
-        }
-        //bgr_mask contains the intersections
+        //         cv::erode(bgr_mask,bgr_mask,kernel);
+        erode(bgr_mask,bgr_mask,erodeElement);
+        erode(bgr_mask,bgr_mask,erodeElement);
 
-        if(m_show_images)
-        {
-            cv::imshow("intersection mask", bgr_mask);
-            cv::waitKey(3);
-        }
+        dilate(bgr_mask,bgr_mask,dilateElement);
+        dilate(bgr_mask,bgr_mask,dilateElement);
+    }
+    catch (cv::Exception& e)
+    {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+    //bgr_mask contains the intersections
 
+    if(m_show_images)
+    {
+        cv::imshow("intersection mask", bgr_mask);
+        cv::waitKey(3);
+    }
+
+<<<<<<< Updated upstream
         num_white_px = cv::countNonZero(bgr_mask);
         if(num_white_px > 30)
         {
@@ -316,13 +365,35 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
             no_intersection_count = 0;
         }
         else
-        {
-            intersection_seen_count = 0;
-            no_intersection_count++;
-        }
+=======
+    num_white_px = cv::countNonZero(bgr_mask);
+    if(num_white_px > 30)
+    {
+        intersection_seen_count++;
+        no_intersection_count = 0;
+    }
+    else
+    {
+        intersection_seen_count = 0;
+        no_intersection_count++;
+    }
 
-        if(intersection_seen_count > 5)
+    if(intersection_seen_count > 5)
+    {
+        cv::Moments mu = cv::moments(bgr_mask, false);
+        //            std::cout << mu.m00 << std::endl;
+        if(mu.m00 > 15000)
+>>>>>>> Stashed changes
         {
+            cx = (float)mu.m10/mu.m00;
+            cy = (float)mu.m01/mu.m00;
+
+            intersection_err.data = ((cx - (float)(cv_ptr->image.size().width)/2.0));
+            intersection_err_pub.publish(intersection_err);
+        }
+        else
+        {
+<<<<<<< Updated upstream
             cv::Moments mu = cv::moments(bgr_mask, false);
             if(mu.m00 > 0)
             {
@@ -334,20 +405,82 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
             }
             else
             {
+=======
+>>>>>>> Stashed changes
             //    ROS_ERROR("No Moment found while calculating moment for intersection..");
             intersection_err.data = -1000.0;
             intersection_err_pub.publish(intersection_err);
-            }
         }
+<<<<<<< Updated upstream
         else if(no_intersection_count >= 10)
         {
             intersection_err.data = -1000.0;
             intersection_err_pub.publish(intersection_err);
         }
+=======
+>>>>>>> Stashed changes
     }
-    //double end_sec =ros::Time::now().toSec();
-    //ROS_INFO_THROTTLE(5, "Time Taken: %lf sec", end_sec - start_sec);
-    //std::cout << end_sec - start_sec << std::endl;
+    //else if(no_intersection_count >= 10)
+    // {
+    //     intersection_err.data = -1000.0;
+    //     intersection_err_pub.publish(intersection_err);
+    // }
+}
+
+void ImageInfoExtractor::publishQRCode(cv_bridge::CvImagePtr cv_ptr)
+{
+    cv::Mat grayImg;
+    cv::cvtColor(cv_ptr->image, grayImg, CV_BGR2GRAY);
+
+    auto width = cv_ptr->image.size().width;
+    auto height = cv_ptr->image.size().height;
+
+    zbar::Image img(width, height, "Y800", grayImg.data, width * height);
+    scanner.scan(img);
+
+    Tags tags;
+    for(auto s = img.symbol_begin(); s != img.symbol_end(); ++s)
+    {
+        Tag tag;
+        tag.message = s->get_data();
+
+        for(int i = 0; i < s->get_location_size(); i++)
+            tag.polygon.push_back(
+                    cv::Point(s->get_location_x(i), s->get_location_y(i)));
+        tags.push_back(tag);
+    }
+
+    for (auto& tag : tags)
+    {
+        tagsPublisher.publish(tag.message);
+    }
+}
+
+void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
+{
+    //Convert Image from Sensor_msgs/Image to CV Image using the cvBridge
+    cv_bridge::CvImagePtr cv_ptr;
+    try
+    {
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+
+    cv::resize(cv_ptr->image, cv_ptr->image, cv::Size(), process_scale, process_scale);
+
+
+    if(checkLine)
+        publishLineErr(cv_ptr);
+
+    if(checkIntersection)
+        publishIntersectionErr(cv_ptr);
+
+    if(checkQRCode)
+        publishQRCode(cv_ptr);
 }
 
 int main(int argc, char** argv) {
@@ -364,18 +497,19 @@ int main(int argc, char** argv) {
     nodeh.param("/processImage/b_upper", imageInfoExtractor.bgr_color_upper[0], 255);
     nodeh.param("/processImage/g_upper", imageInfoExtractor.bgr_color_upper[1], 255);
     nodeh.param("/processImage/r_upper", imageInfoExtractor.bgr_color_upper[2], 255);
-    
+
     nodeh.param("/processImage/h_lower", imageInfoExtractor.hsv_color_lower[0], 20);
     nodeh.param("/processImage/s_lower", imageInfoExtractor.hsv_color_lower[1], 220);
     nodeh.param("/processImage/v_lower", imageInfoExtractor.hsv_color_lower[2], 0);
     nodeh.param("/processImage/h_upper", imageInfoExtractor.hsv_color_upper[0], 30);
     nodeh.param("/processImage/s_upper", imageInfoExtractor.hsv_color_upper[1], 255);
     nodeh.param("/processImage/v_upper", imageInfoExtractor.hsv_color_upper[2], 255);
-    
+
     nodeh.param("/processImage/process_scale", imageInfoExtractor.process_scale, 0.25f);
 
     ROS_INFO("process scale: %f", imageInfoExtractor.process_scale);
 
+<<<<<<< Updated upstream
     //std::string s;
     //n.param<std::string>("my_param", s, "default_value");
     
@@ -387,6 +521,12 @@ int main(int argc, char** argv) {
 
     nodeh.param("/processImage/check_intersections", imageInfoExtractor.check_intersections, true);
 
+=======
+    nodeh.param("/processImage/show_images", imageInfoExtractor.m_show_images, false);
+    ROS_INFO("Show Images: %d\n", (imageInfoExtractor.m_show_images));
+
+    imageInfoExtractor.tagsPublisher = nodeh.advertise<std_msgs::String>("/qr_codes", 10);
+>>>>>>> Stashed changes
 
     imageInfoExtractor.err_pub = nodeh.advertise<std_msgs::Float32>("/line_error", 1);
     imageInfoExtractor.line_visible_pub = nodeh.advertise<std_msgs::Bool>("/line_visible", 1);

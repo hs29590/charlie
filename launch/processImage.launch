@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="processImage" pkg="charlie" type="processImage" output="screen" clear_params="true">
+        <param name="process_scale" value="0.25" />
+        <param name="show_images" value="True" />
+        <param name="use_pid" value="False" />
+
+        <param name="b_lower" value="0" />
+        <param name="g_lower" value="0" />
+        <param name="r_lower" value="0" />
+
+        <param name="b_upper" value="255" />
+        <param name="g_upper" value="255" />
+        <param name="r_upper" value="255" />
+
+        <param name="h_lower" value="80" />
+        <param name="s_lower" value="80" />
+        <param name="v_lower" value="0" />
+
+        <param name="h_upper" value="140" />
+        <param name="s_upper" value="255" />
+        <param name="v_upper" value="255" />
+    </node>
+</launch>
+

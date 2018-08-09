@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8.3)
 project(charlie)
 
 
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_CXX_FLAGS "-std=c++11 -Wall ${CMAKE_CXX_FLAGS}")
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -139,11 +141,12 @@ catkin_package(CATKIN_DEPENDS std_msgs
 ## Your package locations should be listed before other locations
 
 
+find_library(ZBAR_LIBRARIES NAMES zbar)
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 add_executable(processImage_exe src/processImage.cpp)
 SET_TARGET_PROPERTIES(processImage_exe PROPERTIES OUTPUT_NAME processImage)
-target_link_libraries(processImage_exe ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(processImage_exe zbar ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 add_executable(trackbars_exe src/trackbars.cpp)
 SET_TARGET_PROPERTIES(trackbars_exe PROPERTIES OUTPUT_NAME trackbars)
