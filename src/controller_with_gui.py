@@ -14,6 +14,7 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool
 from std_msgs.msg import Int32
 from ca_msgs.msg import Mode
+from ca_msgs.msg import ChargingState
 
 import tf
 import time
