@@ -555,22 +555,22 @@ class DriveCreate2:
         time.sleep(0.02);
 
         if not self.sonar_drive:
-                  self.sendStopCmd();
+          self.sendStopCmd();
       
+	    if(self.state == "Stop"):
+	      self.sendStopCmd();
+
         if (self.state != "FollowLine"):
-            continue;
+          continue;
       
-	if(self.state == "Stop"):
-	    self.sendStopCmd();
-      
-	if(self.line_err == -1000.0):
-	    self.noLineCount = self.noLineCount + 1;
-	    if(self.noLineCount > 20):
-		rospy.loginfo_throttle(5,"Stopping since line isn't visible");
+      	if(self.line_err == -1000.0):
+	        self.noLineCount = self.noLineCount + 1;
+    	    if(self.noLineCount > 20):
+        		rospy.loginfo_throttle(5,"Stopping since line isn't visible");
                 self.sendStopCmd();
                 self.state = "Stop";
 	    if(self.intersection_err == -1000.0):
-                self.sendStopCmd();
+            self.sendStopCmd();
             
         elif(self.intersection_err != -1000.0):
             while(self.intersection_err != -1000.0):
@@ -614,7 +614,7 @@ class DriveCreate2:
             
         elif(self.line_err != -1000.0):
             self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/40.0));
-	    self.noLineCount = 0;
+	        self.noLineCount = 0;
             
       print("Thread exited cleanly");
 

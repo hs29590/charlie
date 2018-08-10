@@ -84,6 +84,7 @@ class Buzzer(object):
       x+=1
 
   elif(tune==5):
+    time.sleep(1)
     pitches=[1047, 988,523]
     duration=[0.1,0.1,0.2]
     for p in pitches:
