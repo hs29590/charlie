@@ -53,7 +53,7 @@ class SonarClass:
         self.echo2Distance = 1000;
 #       self.echo3Distance = 1000;
 
-        self.USSensorStoppingRange = 20.0;
+        self.USSensorStoppingRange = 30.0;
 
         self.high_tick1 = None # global to hold high tick.
         self.high_tick2 = None # global to hold high tick.
