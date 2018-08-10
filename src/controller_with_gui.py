@@ -207,15 +207,15 @@ class DriveCreate2:
     toplevel = Toplevel()
     toplevel.geometry( "%dx%d+%d+%d" % (400,400,self.root.winfo_x() + 10 ,self.root.winfo_y() + 10))
     def aButton():
-	self.destinationSelected = 'A';
+        self.destinationSelected = 'A';
         self.pathPlanner.setEndNode(self.destinationSelected);
         toplevel.destroy();
     def bButton():
-	self.destinationSelected = 'B';
+        self.destinationSelected = 'B';
         self.pathPlanner.setEndNode(self.destinationSelected);
         toplevel.destroy();
     def cButton():
-	self.destinationSelected = 'C';
+        self.destinationSelected = 'C';
         self.pathPlanner.setEndNode(self.destinationSelected);
         toplevel.destroy();
     def dButton():
@@ -253,15 +253,15 @@ class DriveCreate2:
     toplevel = Toplevel()
     toplevel.geometry( "%dx%d+%d+%d" % (400,400,self.root.winfo_x() + 10 ,self.root.winfo_y() + 10))
     def aButton():
-	self.sourceSelected = 'A';
+        self.sourceSelected = 'A';
         self.pathPlanner.setStartNode(self.sourceSelected);
         toplevel.destroy();
     def bButton():
-	self.sourceSelected = 'B';
+        self.sourceSelected = 'B';
         self.pathPlanner.setStartNode(self.sourceSelected);
         toplevel.destroy();
     def cButton():
-	self.sourceSelected = 'C';
+        self.sourceSelected = 'C';
         self.pathPlanner.setStartNode(self.sourceSelected);
         toplevel.destroy();
     def dButton():
@@ -325,9 +325,11 @@ class DriveCreate2:
 
       if(self.sourceSelected is not None and self.destinationSelected is not None):
           self.pathPlanner.calculatePath();
-          print("Path returned with length: ");
+          print("Path returned with length: "),
           self.currentPath = self.pathPlanner.getLeftRightTurnList();
+          print(len(self.currentPath));
           self.currentPathIndex = 1;
+          #if(len(self.currentPath) > 1):
           self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
           print(self.pathPlanner.getLeftRightTurnList()); 
           print(self.pathPlanner.getNodeList()); 
@@ -361,7 +363,8 @@ class DriveCreate2:
           print("Path returned with length: ");
           self.currentPath = self.pathPlanner.getLeftRightTurnList();
           self.currentPathIndex = 1;
-          self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
+          if(len(self.currentPath) > 1):
+              self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
           print(self.pathPlanner.getLeftRightTurnList()); 
           print(self.pathPlanner.getNodeList()); 
       else:
@@ -556,21 +559,19 @@ class DriveCreate2:
 
         if not self.sonar_drive:
           self.sendStopCmd();
-      
-	    if(self.state == "Stop"):
-	      self.sendStopCmd();
+          
+        if(self.state == "Stop"):
+            self.sendStopCmd();
 
         if (self.state != "FollowLine"):
           continue;
       
-      	if(self.line_err == -1000.0):
-	        self.noLineCount = self.noLineCount + 1;
-    	    if(self.noLineCount > 20):
-        		rospy.loginfo_throttle(5,"Stopping since line isn't visible");
+        if(self.line_err == -1000.0):
+            self.noLineCount = self.noLineCount + 1;
+            if(self.noLineCount > 20):
+                rospy.loginfo_throttle(5,"Stopping since line isn't visible");
                 self.sendStopCmd();
                 self.state = "Stop";
-	    if(self.intersection_err == -1000.0):
-            self.sendStopCmd();
             
         elif(self.intersection_err != -1000.0):
             while(self.intersection_err != -1000.0):
@@ -610,11 +611,12 @@ class DriveCreate2:
                 self.smooth_drive(0.4, (-float(self.line_err)/40.0));
                 rospy.loginfo("Going Straight");
             
-            self.nextTurnVariable.set("Next Turn: " + nextTurn);
+            if(nextTurn == 'S' or nextTurn == 'L' or nextTurn == 'R'):
+                self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
             
         elif(self.line_err != -1000.0):
             self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/40.0));
-	        self.noLineCount = 0;
+            self.noLineCount = 0;
             
       print("Thread exited cleanly");
 
