@@ -250,20 +250,20 @@ void ImageInfoExtractor::publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr)
         cv::waitKey(3);
     }
 
-    num_white_px = cv::countNonZero(bgr_mask);
-    if(num_white_px > 30)
-    {
-        intersection_seen_count++;
-        no_intersection_count = 0;
-    }
-    else
-    {
-        intersection_seen_count = 0;
-        no_intersection_count++;
-    }
+   // num_white_px = cv::countNonZero(bgr_mask);
+   // if(num_white_px > 30)
+   // {
+   //     intersection_seen_count++;
+   //     no_intersection_count = 0;
+   // }
+   // else
+   // {
+     //   intersection_seen_count = 0;
+     //   no_intersection_count++;
+    //}
 
-    if(intersection_seen_count > 5)
-    {
+    //if(intersection_seen_count > 5)
+   // {
         cv::Moments mu = cv::moments(bgr_mask, false);
         //            std::cout << mu.m00 << std::endl;
         if(mu.m00 > 15000)
@@ -273,14 +273,16 @@ void ImageInfoExtractor::publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr)
 
             intersection_err.data = ((cx - (float)(cv_ptr->image.size().width)/2.0));
             intersection_err_pub.publish(intersection_err);
+            intersection_seen_count = 1;
         }
         else
         {
             //    ROS_ERROR("No Moment found while calculating moment for intersection..");
             intersection_err.data = -1000.0;
             intersection_err_pub.publish(intersection_err);
+            intersection_seen_count = 0;
         }
-    }
+   // }
     //else if(no_intersection_count >= 10)
     // {
     //     intersection_err.data = -1000.0;

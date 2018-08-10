@@ -610,7 +610,7 @@ class DriveCreate2:
                 self.smooth_drive(0.4, (-float(self.line_err)/40.0));
                 rospy.loginfo("Going Straight");
             
-            self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
+            self.nextTurnVariable.set("Next Turn: " + nextTurn);
             
         elif(self.line_err != -1000.0):
             self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/40.0));
