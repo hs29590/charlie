@@ -227,6 +227,10 @@ class DriveCreate2:
         self.destinationSelected = 'G';
         self.pathPlanner.setEndNode(self.destinationSelected);
         toplevel.destroy();
+    def mButton():
+        self.destinationSelected = 'M';
+        self.pathPlanner.setEndNode(self.destinationSelected);
+        toplevel.destroy();
 
     ttk.Button(toplevel, text=self.pathPlanner.station_names['A'], style='my.TButton', command=aButton).grid(column = 0, row = 0, padx = 10, pady = 10);
     ttk.Button(toplevel, text=self.pathPlanner.station_names['B'], style='my.TButton', command=bButton).grid(column = 1, row = 0, padx = 10, pady = 10);
@@ -235,6 +239,7 @@ class DriveCreate2:
     ttk.Button(toplevel, text=self.pathPlanner.station_names['E'], style='my.TButton', command=eButton).grid(column = 0, row = 2, padx = 10, pady = 10);
     ttk.Button(toplevel, text=self.pathPlanner.station_names['F'], style='my.TButton', command=fButton).grid(column = 1, row = 2, padx = 10, pady = 10);
     ttk.Button(toplevel, text=self.pathPlanner.station_names['G'], style='my.TButton', command=gButton).grid(column = 0, row = 3, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['M'], style='my.TButton', command=mButton).grid(column = 1, row = 3, padx = 10, pady = 10);
 
   def srcpopup(self):
 
@@ -268,6 +273,11 @@ class DriveCreate2:
         self.sourceSelected = 'G';
         self.pathPlanner.setStartNode(self.sourceSelected);
         toplevel.destroy();
+    def mButton():
+        self.sourceSelected = 'M';
+        self.pathPlanner.setStartNode(self.sourceSelected);
+        toplevel.destroy();
+
 
     ttk.Button(toplevel, text=self.pathPlanner.station_names['A'], style='my.TButton', command=aButton).grid(column = 0, row = 0, padx = 10, pady = 10);
     ttk.Button(toplevel, text=self.pathPlanner.station_names['B'], style='my.TButton', command=bButton).grid(column = 1, row = 0, padx = 10, pady = 10);
@@ -276,6 +286,7 @@ class DriveCreate2:
     ttk.Button(toplevel, text=self.pathPlanner.station_names['E'], style='my.TButton', command=eButton).grid(column = 0, row = 2, padx = 10, pady = 10);
     ttk.Button(toplevel, text=self.pathPlanner.station_names['F'], style='my.TButton', command=fButton).grid(column = 1, row = 2, padx = 10, pady = 10);
     ttk.Button(toplevel, text=self.pathPlanner.station_names['G'], style='my.TButton', command=gButton).grid(column = 0, row = 3, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['M'], style='my.TButton', command=mButton).grid(column = 1, row = 3, padx = 10, pady = 10);
 
   def selectSource(self, *args):
       self.srcpopup();

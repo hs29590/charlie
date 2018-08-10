@@ -4,13 +4,13 @@ class Planner:
 
     def __init__(self):
 
-        self.grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-               [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
-               [1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-               [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-               [1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
-               [1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
-               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+        self.grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1],
+               [1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
+               [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1],
+               [1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
 
 
 
@@ -35,7 +35,7 @@ class Planner:
         self.station_coordinates['J'] = [3, 5]; # 9
         self.station_coordinates['K'] = [3, 7]; # 10
         self.station_coordinates['L'] = [3, 9]; # 11
-#        self.station_coordinates['M'] = [1, 3]; # 12
+        self.station_coordinates['M'] = [3, 11]; # 12
 
         self.station_names = {}
         self.station_names['A'] = "GRN";
@@ -46,6 +46,7 @@ class Planner:
         self.station_names['F'] = "DIA";
         self.station_names['G'] = "CAS";
         self.station_names['H'] = "POL";
+        self.station_names['M'] = "DOCK";
 
 	#self.station_coordinates = {}
         #self.station_coordinates['A'] = [3, 1];#[1, 9]; # 0
