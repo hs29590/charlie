@@ -13,6 +13,7 @@ from std_msgs.msg import Empty
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool
 from std_msgs.msg import Int32
+from ca_msgs.msg import Mode
 
 import tf
 import time
@@ -39,7 +40,6 @@ class DriveCreate2:
 
     #Publishers
     self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
-    self.mode_pub = rospy.Publisher('mode', String, queue_size = 1)
     self.tone_pub = rospy.Publisher('buzzer1/tone', Int32, queue_size = 1)
     self.dock_pub = rospy.Publisher('/dock', Empty, queue_size = 1);
     self.undock_pub = rospy.Publisher('/undock', Empty, queue_size = 1);
@@ -178,7 +178,7 @@ class DriveCreate2:
     #Subscribers
     self.bat_sub = rospy.Subscriber('/battery/charge_ratio', Float32, self.batteryCallback)
     self.line_visible_sub = rospy.Subscriber('line_visible', Bool, self.lineVisibleCallback)
-    self.current_mode_sub = rospy.Subscriber('current_mode', String, self.current_mode_callback);
+    self.current_mode_sub = rospy.Subscriber('mode', Mode, self.current_mode_callback);
     self.err_sub = rospy.Subscriber('line_error', Float32, self.errCallback)
     self.odom_sub = rospy.Subscriber('odom', Odometry, self.odomCallback)
     self.sonar_sub = rospy.Subscriber('sonar_drive', Bool, self.sonarCallback);
@@ -296,12 +296,7 @@ class DriveCreate2:
 
   def resetPressed(self):
       self.timeOfLastActivity = rospy.Time.now();
-      tkMessageBox.showerror("Error", "Trying to Reset The Robot, Please wait 10 sec..")
-      rospy.loginfo("Publishing reset, waiting 7 sec..");
-      self.mode_pub.publish("reset");
-      time.sleep(6);
-      self.mode_pub.publish("start");
-      rospy.loginfo("Published Start..");
+      tkMessageBox.showerror("Error", "Reset doesn't work currently..")
       
   def goAhead(self):
       if(self.isAsleep):
@@ -313,7 +308,7 @@ class DriveCreate2:
       if self.docked:
           tkMessageBox.showerror("Error", "Robot is Docked, Press Un-Dock First")
       else:
-          self.mode_pub.publish("safe");
+          self.undock_pub.publish();
           self.state = "FollowLine";
 
       if(self.sourceSelected is not None):
@@ -343,7 +338,7 @@ class DriveCreate2:
           tkMessageBox.showerror("Error", "Robot is Docked, Press Un-Dock First")
       else:
           self.state = "Turn";
-          self.mode_pub.publish("safe");
+          self.undock_pub.publish();
           if(self.command_turn(math.pi)):
               self.state = "FollowLine";
           else:
@@ -366,9 +361,11 @@ class DriveCreate2:
           rospy.logwarn("Either Source or Destination is not set");
               
   def Stop(self):
+      self.undock_pub.publish();
+      self.sendStopCmd();
+      self.sendStopCmd();
       self.timeOfLastActivity = rospy.Time.now();
       self.state = "Stop";
-      self.mode_pub.publish("safe");
       self.sendStopCmd();
 
   def dock(self):
@@ -378,7 +375,6 @@ class DriveCreate2:
           tkMessageBox.showerror("Error", "Robot is Already Docked")
       else:
           self.state = "Dock";
-          self.mode_pub.publish("dock");
 
   def undock(self):
       self.timeOfLastActivity = rospy.Time.now();
@@ -435,7 +431,7 @@ class DriveCreate2:
       self.line_drive = msg.data;
 
   def current_mode_callback(self,msg):
-      self.current_oi_mode.set("OI Mode: " + msg.data);
+      self.current_oi_mode.set("OI Mode: " + str(msg.mode));
 
   def batteryCallback(self,msg):
       self.batteryStatus.set(str("%.2f" % (msg.data*100) ) +"%, Docked: " + str(self.docked));
