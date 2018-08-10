@@ -64,6 +64,9 @@ class DriveCreate2:
     self.intersectionVisible = StringVar();
     self.intersectionVisible.set("Intersection: False");
 
+    self.qrCodeVariable = StringVar();
+    self.qrCodeVariable.set("NA");
+
     self.nextTurnVariable = StringVar();
     self.nextTurnVariable.set("NA");
     
@@ -116,6 +119,9 @@ class DriveCreate2:
 
     self.intersectionLabel = ttk.Label(self.mainframe, textvariable=self.intersectionVisible, font=('Helvetica',12));
     self.intersectionLabel.grid(row=14, column=0);
+    
+    self.qrCodeLabel = ttk.Label(self.mainframe, textvariable=self.qrCodeVariable, font=('Helvetica',12));
+    self.qrCodeLabel.grid(row=14, column=1);
 
     self.nextTurnLabel = ttk.Label(self.mainframe, textvariable=self.nextTurnVariable, font=('Helvetica',10));
     self.nextTurnLabel.grid(row=10,column=0);
@@ -183,6 +189,7 @@ class DriveCreate2:
     self.odom_sub = rospy.Subscriber('odom', Odometry, self.odomCallback)
     self.sonar_sub = rospy.Subscriber('sonar_drive', Bool, self.sonarCallback);
     self.intersection_sub = rospy.Subscriber('/intersection_err', Float32, self.intersectionCallback); 
+    self.qrcode_sub = rospy.Subscriber('/qr_codes', String, self.qrCodeCallback);
    
     self.timeOfLastActivity = rospy.Time.now();
     self.timeOfLastIntersection = rospy.Time.now();
@@ -402,6 +409,7 @@ class DriveCreate2:
       self.nextTurnLabel.update_idletasks();
       self.intersectionLabel.update_idletasks();
       self.intersectionVisible.set("Intersection: " + str(self.intersection_err));
+      self.qrCodeLabel.update_idletasks();
 
       if(self.sourceSelected is not None and self.destinationSelected is not None):
           self.sourceDestinationVar.set("From: " + self.pathPlanner.station_names[self.sourceSelected] + "    To: " + self.pathPlanner.station_names[self.destinationSelected]);
@@ -432,6 +440,9 @@ class DriveCreate2:
 
   def current_mode_callback(self,msg):
       self.current_oi_mode.set("OI Mode: " + str(msg.mode));
+
+  def qrCodeCallback(self, msg):
+      self.qrCodeVariable.set("QR: " + msg.data);
 
   def batteryCallback(self,msg):
       self.batteryStatus.set(str("%.2f" % (msg.data*100) ) +"%, Docked: " + str(self.docked));
