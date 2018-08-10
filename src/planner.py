@@ -14,28 +14,38 @@ class Planner:
 
 
 
-        #self.grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        #       [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
-        #       [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
-        #       [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
-        #       [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-        #       [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-        #       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+       # self.grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+       #        [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+       #        [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+       #        [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+       #        [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+       #        [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+       #        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
 
         self.station_coordinates = {}
         self.station_coordinates['A'] = [1, 9]; # 0
         self.station_coordinates['B'] = [5, 9]; # 1
-        self.station_coordinates['C'] = [1, 7]; # 2
-        self.station_coordinates['D'] = [5, 7]; # 3
+        self.station_coordinates['C'] = [5, 7]; # 2
+        self.station_coordinates['D'] = [5, 5]; # 3
         self.station_coordinates['E'] = [1, 5]; # 4
-        self.station_coordinates['F'] = [5, 5]; # 5
-        self.station_coordinates['G'] = [3, 1]; # 6
-        self.station_coordinates['H'] = [1, 1]; # 7
+        self.station_coordinates['F'] = [3, 1]; # 5
+        self.station_coordinates['G'] = [1, 3]; # 6
+        self.station_coordinates['H'] = [1, 7]; # 7
         self.station_coordinates['I'] = [3, 3]; # 8
         self.station_coordinates['J'] = [3, 5]; # 9
         self.station_coordinates['K'] = [3, 7]; # 10
         self.station_coordinates['L'] = [3, 9]; # 11
-        self.station_coordinates['M'] = [1, 3]; # 12
+#        self.station_coordinates['M'] = [1, 3]; # 12
+
+        self.station_names = {}
+        self.station_names['A'] = "GRN";
+        self.station_names['B'] = "ASM";
+        self.station_names['C'] = "DATA (MSE)";
+        self.station_names['D'] = "WAX";
+        self.station_names['E'] = "SAMP";
+        self.station_names['F'] = "DIA";
+        self.station_names['G'] = "CAS";
+        self.station_names['H'] = "POL";
 
 	#self.station_coordinates = {}
         #self.station_coordinates['A'] = [3, 1];#[1, 9]; # 0
@@ -92,12 +102,3 @@ class Planner:
         else:
             print("Calculate Path First");
             return None;
-        
-        
-#planner = Planner();
-#planner.setStartNode('B');
-#planner.setEndNode('F');
-#planner.calculatePath();
-#print planner.getLeftRightTurnList();
-#print planner.getTurnList();
-#print planner.getNodeList();    

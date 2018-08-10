@@ -9,10 +9,11 @@ from std_msgs.msg import String
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32
 from std_msgs.msg import Float64
+from std_msgs.msg import Empty
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool
 from std_msgs.msg import Int32
-from irobotcreate2.msg import Battery
+
 import tf
 import time
 import numpy
@@ -37,9 +38,11 @@ class DriveCreate2:
 
 
     #Publishers
-    self.cmd_vel_pub = rospy.Publisher('iRobot_0/cmd_vel', Twist, queue_size=1)
-    self.mode_pub = rospy.Publisher('iRobot_0/mode', String, queue_size = 1)
+    self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+    self.mode_pub = rospy.Publisher('mode', String, queue_size = 1)
     self.tone_pub = rospy.Publisher('buzzer1/tone', Int32, queue_size = 1)
+    self.dock_pub = rospy.Publisher('/dock', Empty, queue_size = 1);
+    self.undock_pub = rospy.Publisher('/undock', Empty, queue_size = 1);
     
     #GUI Variables
     self.root = Tk()
@@ -60,6 +63,9 @@ class DriveCreate2:
     
     self.intersectionVisible = StringVar();
     self.intersectionVisible.set("Intersection: False");
+
+    self.nextTurnVariable = StringVar();
+    self.nextTurnVariable.set("NA");
     
     self.lineVisible = StringVar();
     self.lineVisible.set("Line: False");
@@ -103,33 +109,35 @@ class DriveCreate2:
     self.lineLabel.grid(row=0, column=0);
 
     self.oiModeLabel = ttk.Label(self.mainframe, textvariable=self.current_oi_mode, font=('Helvetica',12));
-    self.oiModeLabel.grid(row=14,column=0);
+    self.oiModeLabel.grid(row=15,column=0);
 
     self.sonarLabel = ttk.Label(self.mainframe, textvariable=self.sonarStatus, font=('Helvetica',12));
-    self.sonarLabel.grid(row=0,column=1);
+    self.sonarLabel.grid(row=10,column=1);
 
     self.intersectionLabel = ttk.Label(self.mainframe, textvariable=self.intersectionVisible, font=('Helvetica',12));
-    self.intersectionLabel.grid(row=13, column=0);
+    self.intersectionLabel.grid(row=14, column=0);
 
+    self.nextTurnLabel = ttk.Label(self.mainframe, textvariable=self.nextTurnVariable, font=('Helvetica',10));
+    self.nextTurnLabel.grid(row=10,column=0);
 
     #GUI Buttons
 
     self.buttonStyle = ttk.Style()
     self.buttonStyle.configure('my.TButton', font=('Helvetica', 18))
 
-    ttk.Button(self.mainframe, text="Go", style='my.TButton', command=self.goAhead, width=16).grid(row=2, rowspan=2, column=0, pady=25)
-    ttk.Button(self.mainframe, text="Turn and Go", style='my.TButton', command=self.turnAndGo, width=16).grid(row=2, rowspan=2, column=1, pady=25)
+    ttk.Button(self.mainframe, text="Go", style='my.TButton', command=self.goAhead, width=16).grid(row=2, rowspan=2, column=0, pady=15)
+    ttk.Button(self.mainframe, text="Turn and Go", style='my.TButton', command=self.turnAndGo, width=16).grid(row=2, rowspan=2, column=1, pady=15)
     ttk.Button(self.mainframe, text="STOP", style='my.TButton', command=self.Stop, width=16).grid(row=4, rowspan=3, column=0, columnspan=3, pady=5)
-    ttk.Button(self.mainframe, text="Dock", style='my.TButton', command=self.dock, width = 16).grid(row=8,column=0, pady=15)
-    ttk.Button(self.mainframe, text="Un-Dock", style='my.TButton', command=self.undock, width = 16).grid(row=8,column=1, pady=15)
+    ttk.Button(self.mainframe, text="Dock", style='my.TButton', command=self.dock, width = 16).grid(row=13,column=0, pady=10)
+    ttk.Button(self.mainframe, text="Un-Dock", style='my.TButton', command=self.undock, width = 16).grid(row=13,column=1, pady=10)
 
-    ttk.Button(self.mainframe, text="SOURCE", style='my.TButton', command=self.selectSource, width = 16).grid(row=13,column=0, pady=15)
-    ttk.Button(self.mainframe, text="DESTINATION", style='my.TButton', command=self.selectDestination, width = 16).grid(row=13,column=1, pady=15)
+    ttk.Button(self.mainframe, text="FROM", style='my.TButton', command=self.selectSource, width = 16).grid(row=8,column=0, pady=10)
+    ttk.Button(self.mainframe, text="TO", style='my.TButton', command=self.selectDestination, width = 16).grid(row=8,column=1, pady=10)
 
     #ttk.Button(self.mainframe, text="Reset", style='my.TButton', command=self.resetPressed, width=16).grid(row=10, column=0, pady=5)
     
     self.sourceDestinationLabel = ttk.Label(self.mainframe, textvariable=self.sourceDestinationVar, font=('Helvetica',12));
-    self.sourceDestinationLabel.grid(row=10, column=1);
+    self.sourceDestinationLabel.grid(row=0, column=1);
 
 #    srcSelectMenu = OptionMenu(self.mainframe, self.srcNode, *srcChoices)
 #    #Label(self.mainframe, text="Choose Process", font=("Helvetica", 14)).grid(row = 2, column=1, pady=(15,2))
@@ -160,8 +168,6 @@ class DriveCreate2:
     self.intersectionVisibleCount = 0;
     
     self.line_err = -1000.0;
-    self.left_line_err = -1000.0;
-    self.right_line_err = -1000.0;
     self.intersection_err = -1000.0;
 
     self.STOP_TONE = 2;
@@ -170,21 +176,19 @@ class DriveCreate2:
     self.currentPathIndex = 0;
 
     #Subscribers
-    self.bat_sub = rospy.Subscriber('iRobot_0/battery', Battery, self.batteryCallback)
+    self.bat_sub = rospy.Subscriber('/battery/charge_ratio', Float32, self.batteryCallback)
     self.line_visible_sub = rospy.Subscriber('line_visible', Bool, self.lineVisibleCallback)
-    self.current_mode_sub = rospy.Subscriber('iRobot_0/current_mode', String, self.current_mode_callback);
+    self.current_mode_sub = rospy.Subscriber('current_mode', String, self.current_mode_callback);
     self.err_sub = rospy.Subscriber('line_error', Float32, self.errCallback)
-    self.right_err_sub = rospy.Subscriber('right_line_err', Float32, self.rightLineErrCallback);
-    self.left_err_sub = rospy.Subscriber('left_line_err', Float32, self.leftLineErrCallback);
-
-    self.odom_sub = rospy.Subscriber('iRobot_0/odom', Odometry, self.odomCallback)
+    self.odom_sub = rospy.Subscriber('odom', Odometry, self.odomCallback)
     self.sonar_sub = rospy.Subscriber('sonar_drive', Bool, self.sonarCallback);
     self.intersection_sub = rospy.Subscriber('/intersection_err', Float32, self.intersectionCallback); 
    
     self.timeOfLastActivity = rospy.Time.now();
+    self.timeOfLastIntersection = rospy.Time.now();
 
-    self.sourceSelected = '0';
-    self.destinationSelected = '0';
+    self.sourceSelected = None;
+    self.destinationSelected = None;
 
     self.runThread = threading.Thread(target=self.runThreadFunc)
     self.runThread.daemon = True
@@ -224,13 +228,13 @@ class DriveCreate2:
         self.pathPlanner.setEndNode(self.destinationSelected);
         toplevel.destroy();
 
-    ttk.Button(toplevel, text="A", style='my.TButton', command=aButton).grid(column = 0, row = 0, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="B", style='my.TButton', command=bButton).grid(column = 1, row = 0, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="C", style='my.TButton', command=cButton).grid(column = 0, row = 1, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="D", style='my.TButton', command=dButton).grid(column = 1, row = 1, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="E", style='my.TButton', command=eButton).grid(column = 0, row = 2, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="F", style='my.TButton', command=fButton).grid(column = 1, row = 2, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="G", style='my.TButton', command=gButton).grid(column = 0, row = 3, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['A'], style='my.TButton', command=aButton).grid(column = 0, row = 0, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['B'], style='my.TButton', command=bButton).grid(column = 1, row = 0, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['C'], style='my.TButton', command=cButton).grid(column = 0, row = 1, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['D'], style='my.TButton', command=dButton).grid(column = 1, row = 1, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['E'], style='my.TButton', command=eButton).grid(column = 0, row = 2, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['F'], style='my.TButton', command=fButton).grid(column = 1, row = 2, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['G'], style='my.TButton', command=gButton).grid(column = 0, row = 3, padx = 10, pady = 10);
 
   def srcpopup(self):
 
@@ -265,13 +269,13 @@ class DriveCreate2:
         self.pathPlanner.setStartNode(self.sourceSelected);
         toplevel.destroy();
 
-    ttk.Button(toplevel, text="A", style='my.TButton', command=aButton).grid(column = 0, row = 0, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="B", style='my.TButton', command=bButton).grid(column = 1, row = 0, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="C", style='my.TButton', command=cButton).grid(column = 0, row = 1, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="D", style='my.TButton', command=dButton).grid(column = 1, row = 1, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="E", style='my.TButton', command=eButton).grid(column = 0, row = 2, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="F", style='my.TButton', command=fButton).grid(column = 1, row = 2, padx = 10, pady = 10);
-    ttk.Button(toplevel, text="G", style='my.TButton', command=gButton).grid(column = 0, row = 3, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['A'], style='my.TButton', command=aButton).grid(column = 0, row = 0, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['B'], style='my.TButton', command=bButton).grid(column = 1, row = 0, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['C'], style='my.TButton', command=cButton).grid(column = 0, row = 1, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['D'], style='my.TButton', command=dButton).grid(column = 1, row = 1, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['E'], style='my.TButton', command=eButton).grid(column = 0, row = 2, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['F'], style='my.TButton', command=fButton).grid(column = 1, row = 2, padx = 10, pady = 10);
+    ttk.Button(toplevel, text=self.pathPlanner.station_names['G'], style='my.TButton', command=gButton).grid(column = 0, row = 3, padx = 10, pady = 10);
 
   def selectSource(self, *args):
       self.srcpopup();
@@ -301,15 +305,21 @@ class DriveCreate2:
           self.mode_pub.publish("safe");
           self.state = "FollowLine";
 
-      self.pathPlanner.calculatePath();
-      print("Path returned with length: ");
-      print("Source Selected: " + self.sourceSelected);
-      print("Destination Selected: " + self.destinationSelected);
+      if(self.sourceSelected is not None):
+          print("Source Selected: " + self.sourceSelected);
+      if(self.destinationSelected is not None):
+         print("Destination Selected: " + self.destinationSelected);
 
-      self.currentPath = self.pathPlanner.getLeftRightTurnList();
-      self.currentPathIndex = 1;
-      print(self.pathPlanner.getLeftRightTurnList()); 
-      print(self.pathPlanner.getNodeList()); 
+      if(self.sourceSelected is not None and self.destinationSelected is not None):
+          self.pathPlanner.calculatePath();
+          print("Path returned with length: ");
+          self.currentPath = self.pathPlanner.getLeftRightTurnList();
+          self.currentPathIndex = 1;
+          self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
+          print(self.pathPlanner.getLeftRightTurnList()); 
+          print(self.pathPlanner.getNodeList()); 
+      else:
+          rospy.logwarn("Either Source or Destination is not set");
 
   def turnAndGo(self):
       if(self.isAsleep):
@@ -328,12 +338,21 @@ class DriveCreate2:
           else:
               self.state = "Error, Turn not successfull";
       
-      self.pathPlanner.calculatePath();
-      print("Path returned with length: ");
-      self.currentPath = self.pathPlanner.getLeftRightTurnList();
-      self.currentPathIndex = 1;
-      print(self.pathPlanner.getLeftRightTurnList()); 
-      print(self.pathPlanner.getNodeList()); 
+      if(self.sourceSelected is not None):
+          print("Source Selected: " + self.sourceSelected);
+      if(self.destinationSelected is not None):
+         print("Destination Selected: " + self.destinationSelected);
+
+      if(self.sourceSelected is not None and self.destinationSelected is not None):
+          self.pathPlanner.calculatePath();
+          print("Path returned with length: ");
+          self.currentPath = self.pathPlanner.getLeftRightTurnList();
+          self.currentPathIndex = 1;
+          self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
+          print(self.pathPlanner.getLeftRightTurnList()); 
+          print(self.pathPlanner.getNodeList()); 
+      else:
+          rospy.logwarn("Either Source or Destination is not set");
               
   def Stop(self):
       self.timeOfLastActivity = rospy.Time.now();
@@ -343,6 +362,7 @@ class DriveCreate2:
 
   def dock(self):
       self.timeOfLastActivity = rospy.Time.now();
+      self.dock_pub.publish();
       if self.docked:
           tkMessageBox.showerror("Error", "Robot is Already Docked")
       else:
@@ -351,16 +371,19 @@ class DriveCreate2:
 
   def undock(self):
       self.timeOfLastActivity = rospy.Time.now();
-      if(not self.docked):
-          tkMessageBox.showerror("Error", "Not Docked")
-      else:
-        self.state = "UnDock";
-        self.mode_pub.publish("clean");
-        time.sleep(8.5);
-        self.mode_pub.publish("safe");
 
-        self.state = "Stop";
-        self.sendStopCmd();
+      self.undock_pub.publish();
+      time.sleep(0.3);
+      for ss in range(0,100):
+          self.smooth_drive(-0.2, 0);
+          time.sleep(0.02);
+
+      self.state = "Turn";
+      if(self.command_turn(math.pi)):
+          self.state = "Stop";
+      else:
+          self.state = "Error, Turn not successfull";
+
 
   def updateLabel(self):
       self.currentStatus.set("State: " + self.state);
@@ -369,11 +392,13 @@ class DriveCreate2:
       self.lineLabel.update_idletasks();
       self.oiModeLabel.update_idletasks();
       self.sonarLabel.update_idletasks();
+      self.nextTurnLabel.update_idletasks();
       self.intersectionLabel.update_idletasks();
       self.intersectionVisible.set("Intersection: " + str(self.intersection_err));
 
-      self.sourceDestinationVar.set("SOURCE: " + self.sourceSelected + "    DESTINATION: " + self.destinationSelected);
-      self.sourceDestinationLabel.update_idletasks();
+      if(self.sourceSelected is not None and self.destinationSelected is not None):
+          self.sourceDestinationVar.set("From: " + self.pathPlanner.station_names[self.sourceSelected] + "    To: " + self.pathPlanner.station_names[self.destinationSelected]);
+          self.sourceDestinationLabel.update_idletasks();
 
       self.root.update_idletasks();
 
@@ -391,12 +416,6 @@ class DriveCreate2:
   def intersectionCallback(self, msg):
       self.intersection_err = msg.data;
 
-  def leftLineErrCallback(self, err):
-      self.left_line_err = err.data;
-
-  def rightLineErrCallback(self, err):
-      self.right_line_err = err.data;
-
   def errCallback(self,err):
     self.line_err = err.data;
 
@@ -408,8 +427,7 @@ class DriveCreate2:
       self.current_oi_mode.set("OI Mode: " + msg.data);
 
   def batteryCallback(self,msg):
-      self.docked = msg.dock;
-      self.batteryStatus.set(str("%.2f" % round(msg.level,2))+"%, Docked: " + str(self.docked));
+      self.batteryStatus.set(str("%.2f" % (msg.data*100) ) +"%, Docked: " + str(self.docked));
 
   def smooth_drive(self, lin, ang):
       self.twist.linear.x = 0.5*lin;
@@ -437,17 +455,22 @@ class DriveCreate2:
       current = starting;
       rospy.loginfo("Starting Turning: Current(Starting):" + str(current) + " Desired:" + str(desired));
 
+      turn_direction = 1;
+
       if(desired > starting):
+          if(desired - starting > math.pi):
+              turn_direction = -1;
           t_end = time.time() + 30;
-          while(self.state == "Turn"):
-              self.smooth_drive(0.0,0.5);
+          while(self.state == "Turn" and not rospy.is_shutdown()):
+              self.smooth_drive(0.0,turn_direction*0.3);
               time.sleep(0.01);
               current = self.yaw;
               #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
-              #rospy.loginfo("des > sta - Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
-              if(current > desired or current < starting):
+              rospy.loginfo_throttle(5,"des > sta - Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
+              if(current - desired > 0.01 or starting - current > 0.01):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
+                  rospy.loginfo("Turn Difference: " + str(self.checkAngleDifference(desired, current)));
                   return True;
                   break;
               if(time.time() > t_end):
@@ -457,15 +480,17 @@ class DriveCreate2:
                   break;
       elif(desired < starting):
           t_end = time.time() + 30;
-          while(self.state == "Turn"):
-              self.smooth_drive(0.0,-0.5);
-              time.sleep(0.001);
+          if(starting - desired > math.pi):
+              turn_direction = -1;
+          while(self.state == "Turn" and not rospy.is_shutdown()):
+              self.smooth_drive(0.0,-1*turn_direction*0.3);
+              time.sleep(0.01);
               current = self.yaw;
-              #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
-              #rospy.loginfo("des < sta Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
-              if(current < desired or current > starting):
+              rospy.loginfo_throttle(5,"des < sta Turning: Current: " + str(current) + " Desired: " + str(desired) +  " Starting:" + str(starting));
+              if(desired - current > 0.01 or current - starting > 0.01):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
+                  rospy.loginfo("Turn Difference: " + str(self.checkAngleDifference(desired, current)));
                   return True;
                   break;
               if(time.time() > t_end):
@@ -483,6 +508,21 @@ class DriveCreate2:
   def sendStopCmd(self):
       self.smooth_drive(0.0,0.0);
       self.tone_pub.publish(self.STOP_TONE);
+
+  def checkAngleDifference(self, ang1, ang2):
+      ang1 = ang1 + math.pi;
+      ang2 = ang2 + math.pi;
+      diff = ang1 - ang2;
+      if(ang2 > ang1):
+          diff = ang2 - ang1;
+
+      if(diff > math.pi):
+          if(ang2 > ang1):
+              diff = 2*math.pi - ang2 + ang1;
+          if(ang1 >= ang2):
+              diff = 2*math.pi - ang1 + ang2;
+
+      return diff;
 
   def odomCallback(self,msg):
     if(not self.odomRecd):
@@ -502,6 +542,9 @@ class DriveCreate2:
         if (self.state != "FollowLine"):
             continue;
       
+	if(self.state == "Stop"):
+	    self.sendStopCmd();
+      
 	if(self.line_err == -1000.0):
 	    self.noLineCount = self.noLineCount + 1;
 	    if(self.noLineCount > 20):
@@ -512,11 +555,9 @@ class DriveCreate2:
                 self.sendStopCmd();
             
         elif(self.intersection_err != -1000.0):
-            t_end = time.time() + self.TIME_FOR_MOVING_TOWARDS_INTERSECTION;
-            while(time.time() < t_end):
-                self.smooth_drive(self.LINEAR_SPEED, (-float(self.intersection_err)/40.0));
-                time.sleep(0.02);
-
+            while(self.intersection_err != -1000.0):
+                self.smooth_drive(0.3, (-float(self.intersection_err)/60.0));
+            rospy.loginfo("[Intersection] Sent Stop cmd");
             nextTurn = self.currentPath[self.currentPathIndex];
             self.currentPathIndex = self.currentPathIndex + 1;
             rospy.loginfo("Next Turn is: " + nextTurn); 
@@ -548,6 +589,7 @@ class DriveCreate2:
                     rospy.loginfo("Turn failed");
 
             elif(nextTurn == 'S'):
+                self.smooth_drive(0.4, (-float(self.line_err)/40.0));
                 rospy.loginfo("Going Straight");
             
             self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);

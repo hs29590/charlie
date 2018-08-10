@@ -104,7 +104,7 @@ ImageInfoExtractor::ImageInfoExtractor() : scanner()
 
     checkLine = true;
     checkIntersection = true;
-    checkQRCode = true;
+    checkQRCode = false;
 
     no_line_count = 0;
     cx = cy = 0.0;
@@ -333,14 +333,14 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
 
     cv::resize(cv_ptr->image, cv_ptr->image, cv::Size(), process_scale, process_scale);
 
-
     if(checkLine)
         publishLineErr(cv_ptr);
 
     if(checkIntersection)
         publishIntersectionErr(cv_ptr);
 
-    if(checkQRCode)
+    //if you are forced to check qr codes, or you see a red intersection, so you know you've to check'em
+    if(checkQRCode or intersection_seen_count > 0)
         publishQRCode(cv_ptr);
 }
 
