@@ -342,7 +342,7 @@ void ImageInfoExtractor::imgCallback(const sensor_msgs::ImageConstPtr& msg)
         publishIntersectionErr(cv_ptr);
 
     //if you are forced to check qr codes, or you see a red intersection, so you know you've to check'em
-    if(checkQRCode or intersection_seen_count > 0)
+    if(checkQRCode)
         publishQRCode(cv_ptr);
 }
 
@@ -374,6 +374,8 @@ int main(int argc, char** argv) {
 
     nodeh.param("/processImage/show_images", imageInfoExtractor.m_show_images, false);
     ROS_INFO("Show Images: %d\n", (imageInfoExtractor.m_show_images));
+    nodeh.param("/processImage/checkQR", imageInfoExtractor.checkQRCode, false);
+    ROS_INFO("check QR Code: %d\n", (imageInfoExtractor.checkQRCode));
 
     imageInfoExtractor.tagsPublisher = nodeh.advertise<std_msgs::String>("/qr_codes", 10);
 

@@ -3,6 +3,7 @@
     <node name="processImage" pkg="charlie" type="processImage" output="screen" clear_params="true">
         <param name="process_scale" value="0.25" />
         <param name="show_images" value="False" />
+        <param name="checkQR" value="False" />
         <param name="use_pid" value="False" />
 
         <param name="b_lower" value="0" />
