@@ -65,10 +65,10 @@ class DriveCreate2:
     self.intersectionVisible.set("Intersection: False");
 
     self.qrCodeVariable = StringVar();
-    self.qrCodeVariable.set("NA");
+    self.qrCodeVariable.set("QR Code: NA");
 
     self.nextTurnVariable = StringVar();
-    self.nextTurnVariable.set("NA");
+    self.nextTurnVariable.set("Next Turn: NA");
     
     self.lineVisible = StringVar();
     self.lineVisible.set("Line: False");
@@ -91,15 +91,10 @@ class DriveCreate2:
 
     self.sourceDestinationVar = StringVar();
     self.sourceDestinationVar.set("Source:       Destination:   ");
-
-#    srcChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G'}#, 'H', 'I', 'J', 'K', 'L'}
-#    dstChoices = {'A', 'B', 'C', 'D', 'E', 'F', 'G'}#, 'H', 'I', 'J', 'K', 'L'}
-#
+    
     self.srcNode.set(' ');
     self.dstNode.set(' ');
     
-#    self.pathPlanner.setStartNode(self.srcNode.get());
-#    self.pathPlanner.setEndNode(self.dstNode.get());
 
     #GUI Text
     self.batteryLabel = ttk.Label(self.mainframe, textvariable=self.batteryStatus, font=('Helvetica',12));
@@ -131,30 +126,17 @@ class DriveCreate2:
     self.buttonStyle = ttk.Style()
     self.buttonStyle.configure('my.TButton', font=('Helvetica', 18))
 
-    ttk.Button(self.mainframe, text="Go", style='my.TButton', command=self.goAhead, width=16).grid(row=2, rowspan=2, column=0, pady=15)
-    ttk.Button(self.mainframe, text="Turn and Go", style='my.TButton', command=self.turnAndGo, width=16).grid(row=2, rowspan=2, column=1, pady=15)
-    ttk.Button(self.mainframe, text="STOP", style='my.TButton', command=self.Stop, width=16).grid(row=4, rowspan=3, column=0, columnspan=3, pady=5)
+    ttk.Button(self.mainframe, text="Go", style='my.TButton', command=self.goAhead, width=16).grid(row=4, rowspan=2, column=0, pady=15)
+    ttk.Button(self.mainframe, text="Turn and Go", style='my.TButton', command=self.turnAndGo, width=16).grid(row=4, rowspan=2, column=1, pady=15)
+    ttk.Button(self.mainframe, text="STOP", style='my.TButton', command=self.Stop, width=16).grid(row=8, rowspan=2, column=0, columnspan=3, pady=5)
     ttk.Button(self.mainframe, text="Dock", style='my.TButton', command=self.dock, width = 16).grid(row=13,column=0, pady=10)
     ttk.Button(self.mainframe, text="Un-Dock", style='my.TButton', command=self.undock, width = 16).grid(row=13,column=1, pady=10)
 
-    ttk.Button(self.mainframe, text="FROM", style='my.TButton', command=self.selectSource, width = 16).grid(row=8,column=0, pady=10)
-    ttk.Button(self.mainframe, text="TO", style='my.TButton', command=self.selectDestination, width = 16).grid(row=8,column=1, pady=10)
-
-    #ttk.Button(self.mainframe, text="Reset", style='my.TButton', command=self.resetPressed, width=16).grid(row=10, column=0, pady=5)
+    ttk.Button(self.mainframe, text="FROM", style='my.TButton', command=self.selectSource, width = 16).grid(row=2,column=0, pady=10)
+    ttk.Button(self.mainframe, text="TO", style='my.TButton', command=self.selectDestination, width = 16).grid(row=2,column=1, pady=10)
     
     self.sourceDestinationLabel = ttk.Label(self.mainframe, textvariable=self.sourceDestinationVar, font=('Helvetica',12));
     self.sourceDestinationLabel.grid(row=0, column=1);
-
-#    srcSelectMenu = OptionMenu(self.mainframe, self.srcNode, *srcChoices)
-#    #Label(self.mainframe, text="Choose Process", font=("Helvetica", 14)).grid(row = 2, column=1, pady=(15,2))
-#    srcSelectMenu.grid(row=11, column=1)
-#    #srcSelectMenu.bind('<Button-1>', self.dropdownopen)
-#    self.srcNode.trace('w', self.srcNodeChanged)
-    
-#    dstSelectMenu = OptionMenu(self.mainframe, self.dstNode, *dstChoices)
-#    dstSelectMenu.grid(row=11, column=2)
-#    #srcSelectMenu.bind('<Button-1>', self.dropdownopen)
-#    self.dstNode.trace('w', self.dstNodeChanged)
 
     self.root.after(1000, self.updateLabel);
 
@@ -312,18 +294,10 @@ class DriveCreate2:
           rospy.loginfo("Coming out of sleep");
 
       self.timeOfLastActivity = rospy.Time.now();
-      if self.docked:
-          tkMessageBox.showerror("Error", "Robot is Docked, Press Un-Dock First")
-      else:
-          self.undock_pub.publish();
-          self.state = "FollowLine";
-
-      if(self.sourceSelected is not None):
-          print("Source Selected: " + self.sourceSelected);
-      if(self.destinationSelected is not None):
-         print("Destination Selected: " + self.destinationSelected);
 
       if(self.sourceSelected is not None and self.destinationSelected is not None):
+          print("Source Selected: " + self.sourceSelected);
+          print("Destination Selected: " + self.destinationSelected);
           self.pathPlanner.calculatePath();
           print("Path returned with length: "),
           self.currentPath = self.pathPlanner.getLeftRightTurnList();
@@ -333,8 +307,14 @@ class DriveCreate2:
           self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
           print(self.pathPlanner.getLeftRightTurnList()); 
           print(self.pathPlanner.getNodeList()); 
+          if self.docked:
+              tkMessageBox.showerror("Error", "Robot is Docked, Press Un-Dock First")
+          else:
+              self.undock_pub.publish();
+              self.state = "FollowLine";
       else:
           rospy.logwarn("Either Source or Destination is not set");
+          tkMessageBox.showerror("Error", "Set FROM and TO")
 
   def turnAndGo(self):
       if(self.isAsleep):
@@ -343,22 +323,10 @@ class DriveCreate2:
           rospy.loginfo("Coming out of sleep");
 
       self.timeOfLastActivity = rospy.Time.now();
-      if self.docked:
-          tkMessageBox.showerror("Error", "Robot is Docked, Press Un-Dock First")
-      else:
-          self.state = "Turn";
-          self.undock_pub.publish();
-          if(self.command_turn(math.pi)):
-              self.state = "FollowLine";
-          else:
-              self.state = "Error, Turn not successfull";
       
-      if(self.sourceSelected is not None):
-          print("Source Selected: " + self.sourceSelected);
-      if(self.destinationSelected is not None):
-         print("Destination Selected: " + self.destinationSelected);
-
       if(self.sourceSelected is not None and self.destinationSelected is not None):
+          print("Source Selected: " + self.sourceSelected);
+          print("Destination Selected: " + self.destinationSelected);
           self.pathPlanner.calculatePath();
           print("Path returned with length: ");
           self.currentPath = self.pathPlanner.getLeftRightTurnList();
@@ -367,8 +335,18 @@ class DriveCreate2:
               self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
           print(self.pathPlanner.getLeftRightTurnList()); 
           print(self.pathPlanner.getNodeList()); 
+          if self.docked:
+              tkMessageBox.showerror("Error", "Robot is Docked, Press Un-Dock First")
+          else:
+              self.state = "Turn";
+              self.undock_pub.publish();
+              if(self.command_turn(math.pi)):
+                  self.state = "FollowLine";
+              else:
+                  self.state = "Error, Turn not successfull";
       else:
           rospy.logwarn("Either Source or Destination is not set");
+          tkMessageBox.showerror("Error", "Set FROM and TO")
               
   def Stop(self):
       self.undock_pub.publish();
@@ -491,7 +469,12 @@ class DriveCreate2:
               if(current - desired > 0.01 or starting - current > 0.01):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
-                  rospy.loginfo("Turn Difference: " + str(self.checkAngleDifference(desired, current)));
+                  angleDiff = self.checkAngleDifference(desired, current);
+                  rospy.loginfo("Turn Difference: " + str(angleDiff));
+                  #some times due to minor shift in odom, it says turn successful even when it isn't.
+                  if(angleDiff > 0.5):
+                      rospy.logwarn("Turn didn't execute properly. Trying to turn again...");
+                      return self.command_turn(angleToTurn);
                   return True;
                   break;
               if(time.time() > t_end):
@@ -511,7 +494,12 @@ class DriveCreate2:
               if(desired - current > 0.01 or current - starting > 0.01):
                   self.sendStopCmd();
                   rospy.loginfo("Turn Successful!");
-                  rospy.loginfo("Turn Difference: " + str(self.checkAngleDifference(desired, current)));
+                  angleDiff = self.checkAngleDifference(desired, current);
+                  rospy.loginfo("Turn Difference: " + str(angleDiff));
+                  #some times due to minor shift in odom, it says turn successful even when it isn't.
+                  if(angleDiff > 0.5):
+                      rospy.logwarn("Turn didn't execute properly. Trying to turn again...");
+                      return self.command_turn(angleToTurn);
                   return True;
                   break;
               if(time.time() > t_end):
@@ -585,6 +573,8 @@ class DriveCreate2:
                     self.smooth_drive(0.2, 0);
                     time.sleep(0.02);
                 self.sendStopCmd();
+                self.sourceSelected = self.destinationSelected;
+                self.destinationSelected = None;
                 rospy.loginfo("Stopping at end");
                 self.sendStopCmd();
                 self.state = "Stop";
