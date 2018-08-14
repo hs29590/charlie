@@ -1,0 +1,61 @@
+<?xml version="1.0" ?>
+<launch>
+
+
+<include file="$(find gazebo_ros)/launch/empty_world.launch">
+<!--    <arg name="world_name" value="$(find create_autonomous)/launch/irobot_world.world"/>  -->
+<!--  <arg name="world_name" value="$(find create_autonomous)/launch/factory_world.world"/>   -->
+<arg name = "world_name" value =  "$(find line_follower_turtlebot)/Maps/lfm1.world"/>    
+	<arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+  </include>
+
+
+<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node>
+ 
+
+	<!--<node pkg="gazebo_ros" type="spawn_model" name="spawn_factory"  args="-file /home/intern/factory_world/model.sdf -sdf -model factory_world" /> -->
+
+
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find ca_description)/urdf/create_2.urdf.xacro'" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen" />
+<node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf" args="-model create_2 -urdf -x -2.0 -y -0.5 -z 0.0 -param robot_description" />
+
+    <node name="processImage" pkg="charlie" type="processImage" output="screen" clear_params="true">
+
+        <param name="process_scale" value="0.25" />
+        <param name="show_images" value="True" />
+        <param name="use_pid" value="False" />
+        <param name="image_sub_topic" value="iRobot/camera/image_raw" />
+
+        <param name="b_lower" value="0" />
+        <param name="g_lower" value="0" />
+        <param name="r_lower" value="0" />
+
+        <param name="b_upper" value="255" />
+        <param name="g_upper" value="255" />
+        <param name="r_upper" value="255" />
+
+        <param name="h_lower" value="80" />
+        <param name="s_lower" value="80" />
+        <param name="v_lower" value="0" />
+
+        <param name="h_upper" value="140" />
+        <param name="s_upper" value="255" />
+        <param name="v_upper" value="255" />
+    </node>
+    
+    
+        <node name="controller" pkg="charlie" type="controller_with_gui.py" output="screen" clear_params="true">
+    </node>
+
+</launch>
+
+
+
+
+
+

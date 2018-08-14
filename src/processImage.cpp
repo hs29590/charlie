@@ -352,6 +352,8 @@ int main(int argc, char** argv) {
 
     ros::NodeHandle nodeh;
 
+    std::string image_sub_topic = "/raspicam_node/image_raw";
+
     ImageInfoExtractor imageInfoExtractor;
 
     nodeh.param("/processImage/b_lower", imageInfoExtractor.bgr_color_lower[0], 0);
@@ -377,12 +379,16 @@ int main(int argc, char** argv) {
     nodeh.param("/processImage/checkQR", imageInfoExtractor.checkQRCode, false);
     ROS_INFO("check QR Code: %d\n", (imageInfoExtractor.checkQRCode));
 
+
+    nodeh.param("/processImage/image_sub_topic",  image_sub_topic, std::string("/raspicam_node/image_raw"));
+
+    ROS_INFO("Subscribing to image topic: %s", image_sub_topic.c_str());
     imageInfoExtractor.tagsPublisher = nodeh.advertise<std_msgs::String>("/qr_codes", 10);
 
     imageInfoExtractor.err_pub = nodeh.advertise<std_msgs::Float32>("/line_error", 1);
     imageInfoExtractor.line_visible_pub = nodeh.advertise<std_msgs::Bool>("/line_visible", 1);
     imageInfoExtractor.intersection_err_pub = nodeh.advertise<std_msgs::Float32>("/intersection_err", 1);
-    ros::Subscriber img_sub = nodeh.subscribe("/raspicam_node/image_raw", 1, &ImageInfoExtractor::imgCallback, &imageInfoExtractor);
+    ros::Subscriber img_sub = nodeh.subscribe(image_sub_topic.c_str(), 1, &ImageInfoExtractor::imgCallback, &imageInfoExtractor);
 
     ros::spin();
     return 0;
