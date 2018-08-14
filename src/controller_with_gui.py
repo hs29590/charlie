@@ -473,9 +473,9 @@ class DriveCreate2:
                   angleDiff = self.checkAngleDifference(desired, current);
                   rospy.loginfo("Turn Difference: " + str(angleDiff));
                   #some times due to minor shift in odom, it says turn successful even when it isn't.
-                  if(angleDiff > 0.5):
-                      rospy.logwarn("Turn didn't execute properly. Trying to turn again...");
-                      return self.command_turn(angleToTurn);
+              #    if(angleDiff > 0.5):
+              #        rospy.logwarn("Turn didn't execute properly. Trying to turn again...");
+              #        return self.command_turn(angleToTurn);
                   return True;
                   break;
               if(time.time() > t_end):
@@ -498,9 +498,9 @@ class DriveCreate2:
                   angleDiff = self.checkAngleDifference(desired, current);
                   rospy.loginfo("Turn Difference: " + str(angleDiff));
                   #some times due to minor shift in odom, it says turn successful even when it isn't.
-                  if(angleDiff > 0.5):
-                      rospy.logwarn("Turn didn't execute properly. Trying to turn again...");
-                      return self.command_turn(angleToTurn);
+              #    if(angleDiff > 0.5):
+              #        rospy.logwarn("Turn didn't execute properly. Trying to turn again...");
+              #        return self.command_turn(angleToTurn);
                   return True;
                   break;
               if(time.time() > t_end):

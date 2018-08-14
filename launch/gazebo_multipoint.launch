@@ -3,9 +3,7 @@
 
 
 <include file="$(find gazebo_ros)/launch/empty_world.launch">
-<!--    <arg name="world_name" value="$(find create_autonomous)/launch/irobot_world.world"/>  -->
-<!--  <arg name="world_name" value="$(find create_autonomous)/launch/factory_world.world"/>   -->
-<arg name = "world_name" value =  "$(find line_follower_turtlebot)/Maps/lfm1.world"/>    
+<arg name = "world_name" value =  "$(find charlie)/Maps/lfm1.world"/>    
 	<arg name="paused" value="false"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="true"/>
@@ -14,15 +12,14 @@
   </include>
 
 
-<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node>
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node>
  
 
-	<!--<node pkg="gazebo_ros" type="spawn_model" name="spawn_factory"  args="-file /home/intern/factory_world/model.sdf -sdf -model factory_world" /> -->
+    <param name="robot_description" command="$(find xacro)/xacro.py '$(find charlie)/urdf/create_2.urdf.xacro'" />
 
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen" />
 
-  <param name="robot_description" command="$(find xacro)/xacro.py '$(find ca_description)/urdf/create_2.urdf.xacro'" />
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen" />
-<node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf" args="-model create_2 -urdf -x -2.0 -y -0.5 -z 0.0 -param robot_description" />
+    <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf" args="-model create_2 -urdf -x -2.0 -y -0.5 -z 0.0 -param robot_description" />
 
     <node name="processImage" pkg="charlie" type="processImage" output="screen" clear_params="true">
 
