@@ -588,7 +588,9 @@ class DriveCreate2:
                 rospy.loginfo_throttle(5,"Stopping since line isn't visible");
                 self.sendStopCmd();
                 self.state = "Stop";
-            
+        else:
+          self.sendStopCmd();
+
       print("Thread exited cleanly");
 
 def main(args):
