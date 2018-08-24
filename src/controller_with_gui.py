@@ -343,7 +343,7 @@ class DriveCreate2:
           else:
               self.state = "Turn";
               self.undock_pub.publish();
-              if(self.command_turn(math.pi)):
+              if(self.command_turn(0.5, math.pi, 0)):
                   self.state = "FollowLine";
               else:
                   self.state = "Error, Turn not successfull";
@@ -377,7 +377,7 @@ class DriveCreate2:
           time.sleep(0.02);
 
       self.state = "Turn";
-      if(self.command_turn(math.pi)):
+      if(self.command_turn(0.5, math.pi , 0)):
           self.state = "Stop";
       else:
           self.state = "Error, Turn not successfull";
@@ -444,79 +444,33 @@ class DriveCreate2:
       else:
         self.sonarStatus.set('Obstruction');
 
-  def command_turn(self, angleToTurn):
-      if(not self.odomRecd):
-          rospy.loginfo("Trying to turn without odom recd.");
-          return False;
-      starting = self.yaw;
-      desired = starting + angleToTurn;
-      if(desired > math.pi):
-          desired = desired - 2*math.pi;
-      elif(desired < -math.pi):
-          desired = desired + 2*math.pi;
-      
-      current = starting;
-      rospy.loginfo("Starting Turning: Current(Starting):" + str(current) + " Desired:" + str(desired));
+  def command_turn(self, angular_speed, relative_angle, clockwise):
+    starting = self.yaw;
+    turn_direction = 1;
+    if clockwise:
+        turn_direction = -1;
 
-      turn_direction = 1;
+    t0 = rospy.Time.now().to_sec()
+    current_angle = 0
 
-      if(desired > starting):
-          if(desired - starting > math.pi):
-              turn_direction = -1;
-          t_end = time.time() + 30;
-          while(self.state == "Turn" and not rospy.is_shutdown()):
-              self.smooth_drive(0.0,turn_direction*0.3);
-              time.sleep(0.01);
-              current = self.yaw;
-              #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
-              rospy.loginfo_throttle(5,"des > sta - Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
-              if(current - desired > 0.01 or starting - current > 0.01):
-                  self.sendStopCmd();
-                  rospy.loginfo("Turn Successful!");
-                  angleDiff = self.checkAngleDifference(desired, current);
-                  rospy.loginfo("Turn Difference: " + str(angleDiff));
-                  #some times due to minor shift in odom, it says turn successful even when it isn't.
-              #    if(angleDiff > 0.5):
-              #        rospy.logwarn("Turn didn't execute properly. Trying to turn again...");
-              #        return self.command_turn(angleToTurn);
-                  return True;
-                  break;
-              if(time.time() > t_end):
-                  rospy.logwarn("Stopping the turn, couldn't finish it");
-                  self.sendStopCmd();
-                  return False;
-                  break;
-      elif(desired < starting):
-          t_end = time.time() + 30;
-          if(starting - desired > math.pi):
-              turn_direction = -1;
-          while(self.state == "Turn" and not rospy.is_shutdown()):
-              self.smooth_drive(0.0,-1*turn_direction*0.3);
-              time.sleep(0.01);
-              current = self.yaw;
-              rospy.loginfo_throttle(5,"des < sta Turning: Current: " + str(current) + " Desired: " + str(desired) +  " Starting:" + str(starting));
-              if(desired - current > 0.01 or current - starting > 0.01):
-                  self.sendStopCmd();
-                  rospy.loginfo("Turn Successful!");
-                  angleDiff = self.checkAngleDifference(desired, current);
-                  rospy.loginfo("Turn Difference: " + str(angleDiff));
-                  #some times due to minor shift in odom, it says turn successful even when it isn't.
-              #    if(angleDiff > 0.5):
-              #        rospy.logwarn("Turn didn't execute properly. Trying to turn again...");
-              #        return self.command_turn(angleToTurn);
-                  return True;
-                  break;
-              if(time.time() > t_end):
-                  rospy.logwarn("Stopping the turn, couldn't finish it");
-                  self.sendStopCmd();
-                  return False;
-                  break;
+    while(current_angle < relative_angle and self.state == "Turn" and not rospy.is_shutdown()):
+
+        self.smooth_drive(0.0, turn_direction*angular_speed);
+        t1 = rospy.Time.now().to_sec()
+        current_angle = angular_speed*(t1-t0)
+
+    angleDiff = self.checkAngleDifference(starting, self.yaw);
+    rospy.loginfo("Turn Difference: " + str(angleDiff));
+    
+    if(self.state != "Turn"):
+        rospy.logwarn("Turn stopped due to state change");
       
-      self.sendStopCmd();
-      if(self.state != "Turn"):
-          rospy.logwarn("Turn stopped due to state change");
-      
-      return False;
+    self.sendStopCmd();
+
+    if(abs(relative_angle - angleDiff) < 0.2):
+        return True;
+    else:
+        return False;
 
   def sendStopCmd(self):
       self.smooth_drive(0.0,0.0);
@@ -560,8 +514,10 @@ class DriveCreate2:
     
     elif(nextTurn == 'L' or nextTurn == 'R'):
         turnSign = 1;
+        clockwise = 0;
         if(nextTurn == 'R'):
             turnSign = -1;
+            clockwise = 1;
 
         for stpCnter in range(50):
             self.smooth_drive(0.2, 0);
@@ -569,12 +525,13 @@ class DriveCreate2:
         rospy.loginfo("Turning Now");
         self.sendStopCmd();
         self.state = "Turn";
-        if(self.command_turn((turnSign*math.pi)/2)):
+        if(self.command_turn(0.3, math.pi/2 , clockwise)):
             self.state = "FollowLine";
             rospy.loginfo("Turned...");
         else:
             self.state = "Error, Turn not successfull";
             rospy.loginfo("Turn failed");
+            self.sendStopCmd();
 
     elif(nextTurn == 'S'):
         self.smooth_drive(0.4, (-float(self.line_err)/40.0));
