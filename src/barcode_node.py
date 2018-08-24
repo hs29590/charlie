@@ -40,12 +40,8 @@ class ReadFromScanner():
         while True:
             self.mutex.acquire()
             if(time.time() - self.lastCharacterReadTime > self.maxTimeBetweenCharacters):
-            #if(self.pastDecodedString != self.decodedString):
                 if(len(self.decodedString) > 0):
-                    #print("\n\nString is: " ),
                     self.barcodeDataPub.publish(self.decodedString);
-                    #print(self.decodedString)
-                    #print("\n\n");
                     self.pastDecodedString = self.decodedString;
                     self.decodedString = '';
             self.mutex.release();
@@ -61,7 +57,6 @@ class ReadFromScanner():
                         self.decodedString = self.decodedString + self.hid[int(ord(c))]
                         self.lastCharacterReadTime = time.time();
                     except:
-                        #print "passing ", str(ord(c))
                         pass
             self.mutex.release();
 
@@ -73,4 +68,3 @@ if __name__ == "__main__":
       barcode_port = '/dev/hidraw0';
   R = ReadFromScanner(barcode_port)
   rospy.spin()
-  #b = raw_input('Press any key to exit..');

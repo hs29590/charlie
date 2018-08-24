@@ -15,6 +15,7 @@ from std_msgs.msg import Bool
 from std_msgs.msg import Int32
 from ca_msgs.msg import Mode
 from ca_msgs.msg import ChargingState
+from threading import Lock
 
 import tf
 import time
@@ -45,6 +46,9 @@ class DriveCreate2:
     self.dock_pub = rospy.Publisher('/dock', Empty, queue_size = 1);
     self.undock_pub = rospy.Publisher('/undock', Empty, queue_size = 1);
     
+    self.intersectionCodeMutex = Lock()
+
+
     #GUI Variables
     self.root = Tk()
     self.root.title("GUI")
@@ -161,6 +165,8 @@ class DriveCreate2:
 
     self.currentIntersectionCode = '';
 
+    self.timeOfLastIntersection = rospy.Time.now();
+
     self.STOP_TONE = 2;
     self.FOLLOW_TONE = 5;
     self.currentPath = None;
@@ -185,7 +191,6 @@ class DriveCreate2:
     self.runThread = threading.Thread(target=self.runThreadFunc)
     self.runThread.daemon = True
       
-    
 
   def dstpopup(self):
 
@@ -426,8 +431,12 @@ class DriveCreate2:
       self.current_oi_mode.set("OI Mode: " + str(msg.mode));
 
   def qrCodeCallback(self, msg):
-      self.qrCodeVariable.set("QR: " + msg.data);
-      self.currentIntersectionCode = msg.data;
+      if(rospy.Time.now() - self.timeOfLastIntersection > rospy.Duration(5)):
+          self.qrCodeVariable.set("QR: " + msg.data);
+          self.intersectionCodeMutex.acquire();
+          self.currentIntersectionCode = msg.data;
+          self.intersectionCodeMutex.release();
+          self.timeOfLastIntersection = rospy.Time.now();
 
   def batteryCallback(self,msg):
       self.batteryStatus.set(str("%.2f" % (msg.data*100) ) +"%, Docked: " + str(self.docked));
@@ -562,7 +571,9 @@ class DriveCreate2:
             self.currentPathIndex = self.currentPathIndex + 1;
             rospy.loginfo("Next Turn is: " + nextTurn); 
             self.executeTurn(nextTurn);
+            self.intersectionCodeMutex.acquire();
             self.currentIntersectionCode = '';
+            self.intersectionCodeMutex.release();
         
         elif(self.intersection_err != -1000.0):
             self.smooth_drive(0.2, (-float(self.intersection_err)/60.0));
