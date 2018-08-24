@@ -458,8 +458,10 @@ class DriveCreate2:
         self.smooth_drive(0.0, turn_direction*angular_speed);
         t1 = rospy.Time.now().to_sec()
         current_angle = angular_speed*(t1-t0)
+        angleDiff = self.checkAngleDifference(starting, self.yaw);
+        if(abs(relative_angle - angleDiff) < 0.1):
+            break;
 
-    angleDiff = self.checkAngleDifference(starting, self.yaw);
     rospy.loginfo("Turn Difference: " + str(angleDiff));
     
     if(self.state != "Turn"):
@@ -525,7 +527,7 @@ class DriveCreate2:
         rospy.loginfo("Turning Now");
         self.sendStopCmd();
         self.state = "Turn";
-        if(self.command_turn(0.3, math.pi/2 , clockwise)):
+        if(self.command_turn(0.2, math.pi/2 , clockwise)):
             self.state = "FollowLine";
             rospy.loginfo("Turned...");
         else:
@@ -555,35 +557,26 @@ class DriveCreate2:
           self.sendStopCmd();
           continue;
       
-        if(self.line_err == -1000.0):
-            self.noLineCount = self.noLineCount + 1;
-            if(self.noLineCount > 20):
-                rospy.loginfo_throttle(5,"Stopping since line isn't visible");
-                self.sendStopCmd();
-                self.state = "Stop";
+        if(len(self.currentIntersectionCode) > 0):
+            nextTurn = self.currentPath[self.currentPathIndex];
+            self.currentPathIndex = self.currentPathIndex + 1;
+            rospy.loginfo("Next Turn is: " + nextTurn); 
+            self.executeTurn(nextTurn);
+            self.currentIntersectionCode = '';
         
         elif(self.intersection_err != -1000.0):
-            while(self.intersection_err != -1000.0):
-                self.smooth_drive(0.3, (-float(self.intersection_err)/60.0));
-                if(len(self.currentIntersectionCode) > 0):
-                    break;
-
-            if(len(self.currentIntersectionCode) > 0):
-                nextTurn = self.currentPath[self.currentPathIndex];
-                self.currentPathIndex = self.currentPathIndex + 1;
-                rospy.loginfo("Next Turn is: " + nextTurn); 
-                self.executeTurn(nextTurn);
-                self.currentIntersectionCode = '';
-
-            #nextTurn = self.currentPath[self.currentPathIndex];
-            #self.currentPathIndex = self.currentPathIndex + 1;
-            #rospy.loginfo("Next Turn is: " + nextTurn); 
-            
-            #self.executeTurn(nextTurn);
+            self.smooth_drive(0.2, (-float(self.intersection_err)/60.0));
             
         elif(self.line_err != -1000.0):
             self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/40.0));
             self.noLineCount = 0;
+        
+        elif(self.line_err == -1000.0):
+            self.noLineCount = self.noLineCount + 1;
+            if(self.noLineCount > 40):
+                rospy.loginfo_throttle(5,"Stopping since line isn't visible");
+                self.sendStopCmd();
+                self.state = "Stop";
             
       print("Thread exited cleanly");
 
