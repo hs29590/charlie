@@ -485,7 +485,6 @@ class DriveCreate2:
 
   def sendStopCmd(self):
       self.smooth_drive(0.0,0.0);
-      self.tone_pub.publish(self.STOP_TONE);
 
   def checkAngleDifference(self, ang1, ang2):
       ang1 = ang1 + math.pi;
