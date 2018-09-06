@@ -214,7 +214,7 @@ void ImageInfoExtractor::publishLineErr(cv_bridge::CvImagePtr cv_ptr)
 void ImageInfoExtractor::publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr)
 {
     //Area to exclude in the image
-    cv::Rect rect(0, 0, (int)cv_ptr->image.size().width, (int)2*cv_ptr->image.size().height/3);
+    cv::Rect rect((int)cv_ptr->image.size().width/4, 0, (int)2*cv_ptr->image.size().width/4, (int)2*cv_ptr->image.size().height/3);
 
     //checks red intersections
     try
@@ -271,7 +271,7 @@ void ImageInfoExtractor::publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr)
             cx = (float)mu.m10/mu.m00;
             cy = (float)mu.m01/mu.m00;
 
-            intersection_err.data = ((cx - (float)(cv_ptr->image.size().width)/2.0));
+            intersection_err.data = ((cx + (int)cv_ptr->image.size().width/4 - (float)(cv_ptr->image.size().width)/2.0));
             intersection_err_pub.publish(intersection_err);
             intersection_seen_count = 1;
         }
