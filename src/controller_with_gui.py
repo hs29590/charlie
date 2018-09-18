@@ -25,6 +25,9 @@ from Tkinter import *
 import ttk
 import tkMessageBox
 import threading
+import Adafruit_GPIO.SPI as SPI
+import Adafruit_MCP3008
+
 
 class DriveCreate2:
 
@@ -39,7 +42,13 @@ class DriveCreate2:
     self.TIME_FOR_TURNING = 4; #in seconds, this should also change with the LINEAR_SPEED
 
 
-    #Publishers
+    #SPI BATTERY INTERFACE
+    self.SPI_PORT   = 0
+    self.SPI_DEVICE = 0
+    self.mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(self.SPI_PORT, self.SPI_DEVICE))
+    self.MCP_CHANNEL = 1;
+    
+#Publishers
     self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
     self.tone_pub = rospy.Publisher('buzzer1/tone', Int32, queue_size = 1)
     self.dock_pub = rospy.Publisher('/dock', Empty, queue_size = 1);
@@ -91,7 +100,7 @@ class DriveCreate2:
     self.dstNode = StringVar();
 
     self.sourceDestinationVar = StringVar();
-    self.sourceDestinationVar.set("Source:       Destination:   ");
+    self.sourceDestinationVar.set("System Batt: N/A ");
     
     self.srcNode.set(' ');
     self.dstNode.set(' ');
@@ -393,10 +402,6 @@ class DriveCreate2:
       self.intersectionVisible.set("Intersection: " + str(self.intersection_err));
       self.qrCodeLabel.update_idletasks();
 
-      if(self.sourceSelected is not None and self.destinationSelected is not None):
-          self.sourceDestinationVar.set("From: " + self.pathPlanner.station_names[self.sourceSelected] + "    To: " + self.pathPlanner.station_names[self.destinationSelected]);
-          self.sourceDestinationLabel.update_idletasks();
-
       self.root.update_idletasks();
 
       if(self.state == "FollowLine" and self.line_drive and self.sonar_drive):
@@ -408,6 +413,13 @@ class DriveCreate2:
           rospy.loginfo("Going to sleep");
 
 
+      value = self.mcp.read_adc(self.MCP_CHANNEL);
+      self.sourceDestinationVar.set("System Batt:" + str(round(value/53.4,2)) + " V");
+      if(value/53.4 < 10):
+          self.tone_pub.publish(self.STOP_TONE);
+          self.sourceDestinationVar.set("System Batt:" + str(round(value/53.4,2)) + " V CHARGE NOW");
+
+      self.sourceDestinationLabel.update_idletasks();
       self.root.after(200, self.updateLabel);
  
   def intersectionCallback(self, msg):
@@ -427,7 +439,7 @@ class DriveCreate2:
       self.qrCodeVariable.set("QR: " + msg.data);
 
   def batteryCallback(self,msg):
-      self.batteryStatus.set(str("%.2f" % (msg.data*100) ) +"%, Docked: " + str(self.docked));
+      self.batteryStatus.set(str("Robot Batt: " + "%.2f" % (msg.data*100) + "%"));
 
   def smooth_drive(self, lin, ang):
       self.twist.linear.x = 0.5*lin;
