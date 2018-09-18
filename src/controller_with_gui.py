@@ -15,7 +15,6 @@ from std_msgs.msg import Bool
 from std_msgs.msg import Int32
 from ca_msgs.msg import Mode
 from ca_msgs.msg import ChargingState
-from threading import Lock
 
 import tf
 import time
@@ -46,9 +45,6 @@ class DriveCreate2:
     self.dock_pub = rospy.Publisher('/dock', Empty, queue_size = 1);
     self.undock_pub = rospy.Publisher('/undock', Empty, queue_size = 1);
     
-    self.intersectionCodeMutex = Lock()
-
-
     #GUI Variables
     self.root = Tk()
     self.root.title("GUI")
@@ -131,14 +127,14 @@ class DriveCreate2:
     self.buttonStyle = ttk.Style()
     self.buttonStyle.configure('my.TButton', font=('Helvetica', 18))
 
-    ttk.Button(self.mainframe, text="Go", style='my.TButton', command=self.goAhead, width=16).grid(row=4, rowspan=2, column=0, pady=15)
-    ttk.Button(self.mainframe, text="Turn and Go", style='my.TButton', command=self.turnAndGo, width=16).grid(row=4, rowspan=2, column=1, pady=15)
+    ttk.Button(self.mainframe, text="Go", style='my.TButton', command=self.goAhead, width=16).grid(row=2, rowspan=3, column=0, pady=15)
+    ttk.Button(self.mainframe, text="Turn and Go", style='my.TButton', command=self.turnAndGo, width=16).grid(row=2, rowspan=3, column=1, pady=15)
     ttk.Button(self.mainframe, text="STOP", style='my.TButton', command=self.Stop, width=16).grid(row=8, rowspan=2, column=0, columnspan=3, pady=5)
     ttk.Button(self.mainframe, text="Dock", style='my.TButton', command=self.dock, width = 16).grid(row=13,column=0, pady=10)
     ttk.Button(self.mainframe, text="Un-Dock", style='my.TButton', command=self.undock, width = 16).grid(row=13,column=1, pady=10)
 
-    ttk.Button(self.mainframe, text="FROM", style='my.TButton', command=self.selectSource, width = 16).grid(row=2,column=0, pady=10)
-    ttk.Button(self.mainframe, text="TO", style='my.TButton', command=self.selectDestination, width = 16).grid(row=2,column=1, pady=10)
+#    ttk.Button(self.mainframe, text="FROM", style='my.TButton', command=self.selectSource, width = 16).grid(row=2,column=0, pady=10)
+#    ttk.Button(self.mainframe, text="TO", style='my.TButton', command=self.selectDestination, width = 16).grid(row=2,column=1, pady=10)
     
     self.sourceDestinationLabel = ttk.Label(self.mainframe, textvariable=self.sourceDestinationVar, font=('Helvetica',12));
     self.sourceDestinationLabel.grid(row=0, column=1);
@@ -163,10 +159,6 @@ class DriveCreate2:
     self.line_err = -1000.0;
     self.intersection_err = -1000.0;
 
-    self.currentIntersectionCode = '';
-
-    self.timeOfLastIntersection = rospy.Time.now();
-
     self.STOP_TONE = 2;
     self.FOLLOW_TONE = 5;
     self.currentPath = None;
@@ -180,17 +172,18 @@ class DriveCreate2:
     self.odom_sub = rospy.Subscriber('odom', Odometry, self.odomCallback)
     self.sonar_sub = rospy.Subscriber('sonar_drive', Bool, self.sonarCallback);
     self.intersection_sub = rospy.Subscriber('/intersection_err', Float32, self.intersectionCallback); 
-    self.qrcode_sub = rospy.Subscriber('/barcode_data', String, self.qrCodeCallback);
+    self.qrcode_sub = rospy.Subscriber('/qr_codes', String, self.qrCodeCallback);
    
     self.timeOfLastActivity = rospy.Time.now();
     self.timeOfLastIntersection = rospy.Time.now();
 
-    self.sourceSelected = None;
-    self.destinationSelected = None;
+    self.sourceSelected = 'A';
+    self.destinationSelected = 'E';
 
     self.runThread = threading.Thread(target=self.runThreadFunc)
     self.runThread.daemon = True
       
+    
 
   def dstpopup(self):
 
@@ -304,17 +297,17 @@ class DriveCreate2:
       self.timeOfLastActivity = rospy.Time.now();
 
       if(self.sourceSelected is not None and self.destinationSelected is not None):
-          print("Source Selected: " + self.sourceSelected);
-          print("Destination Selected: " + self.destinationSelected);
-          self.pathPlanner.calculatePath();
-          print("Path returned with length: "),
-          self.currentPath = self.pathPlanner.getLeftRightTurnList();
-          print(len(self.currentPath));
-          self.currentPathIndex = 1;
-          #if(len(self.currentPath) > 1):
-          self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
-          print(self.pathPlanner.getLeftRightTurnList()); 
-          print(self.pathPlanner.getNodeList()); 
+#          print("Source Selected: " + self.sourceSelected);
+#          print("Destination Selected: " + self.destinationSelected);
+#          self.pathPlanner.calculatePath();
+#          print("Path returned with length: "),
+#          self.currentPath = self.pathPlanner.getLeftRightTurnList();
+#          print(len(self.currentPath));
+#          self.currentPathIndex = 1;
+#          #if(len(self.currentPath) > 1):
+#          self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
+#          print(self.pathPlanner.getLeftRightTurnList()); 
+#          print(self.pathPlanner.getNodeList()); 
           if self.docked:
               tkMessageBox.showerror("Error", "Robot is Docked, Press Un-Dock First")
           else:
@@ -333,22 +326,22 @@ class DriveCreate2:
       self.timeOfLastActivity = rospy.Time.now();
       
       if(self.sourceSelected is not None and self.destinationSelected is not None):
-          print("Source Selected: " + self.sourceSelected);
-          print("Destination Selected: " + self.destinationSelected);
-          self.pathPlanner.calculatePath();
-          print("Path returned with length: ");
-          self.currentPath = self.pathPlanner.getLeftRightTurnList();
-          self.currentPathIndex = 1;
-          if(len(self.currentPath) > 1):
-              self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
-          print(self.pathPlanner.getLeftRightTurnList()); 
-          print(self.pathPlanner.getNodeList()); 
+#print("Source Selected: " + self.sourceSelected);
+#          print("Destination Selected: " + self.destinationSelected);
+#          self.pathPlanner.calculatePath();
+#          print("Path returned with length: ");
+#          self.currentPath = self.pathPlanner.getLeftRightTurnList();
+#          self.currentPathIndex = 1;
+#          if(len(self.currentPath) > 1):
+#              self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
+#          print(self.pathPlanner.getLeftRightTurnList()); 
+#          print(self.pathPlanner.getNodeList()); 
           if self.docked:
               tkMessageBox.showerror("Error", "Robot is Docked, Press Un-Dock First")
           else:
               self.state = "Turn";
               self.undock_pub.publish();
-              if(self.command_turn(0.5, math.pi, 0)):
+              if(self.command_turn(math.pi)):
                   self.state = "FollowLine";
               else:
                   self.state = "Error, Turn not successfull";
@@ -382,7 +375,7 @@ class DriveCreate2:
           time.sleep(0.02);
 
       self.state = "Turn";
-      if(self.command_turn(0.5, math.pi , 0)):
+      if(self.command_turn(math.pi)):
           self.state = "Stop";
       else:
           self.state = "Error, Turn not successfull";
@@ -431,12 +424,7 @@ class DriveCreate2:
       self.current_oi_mode.set("OI Mode: " + str(msg.mode));
 
   def qrCodeCallback(self, msg):
-      if(rospy.Time.now() - self.timeOfLastIntersection > rospy.Duration(5)):
-          self.qrCodeVariable.set("QR: " + msg.data);
-          self.intersectionCodeMutex.acquire();
-          self.currentIntersectionCode = msg.data;
-          self.intersectionCodeMutex.release();
-          self.timeOfLastIntersection = rospy.Time.now();
+      self.qrCodeVariable.set("QR: " + msg.data);
 
   def batteryCallback(self,msg):
       self.batteryStatus.set(str("%.2f" % (msg.data*100) ) +"%, Docked: " + str(self.docked));
@@ -453,38 +441,83 @@ class DriveCreate2:
       else:
         self.sonarStatus.set('Obstruction');
 
-  def command_turn(self, angular_speed, relative_angle, clockwise):
-    starting = self.yaw;
-    turn_direction = 1;
-    if clockwise:
-        turn_direction = -1;
-
-    t0 = rospy.Time.now().to_sec()
-    current_angle = 0
-
-    while(current_angle < relative_angle and self.state == "Turn" and not rospy.is_shutdown()):
-
-        self.smooth_drive(0.0, turn_direction*angular_speed);
-        t1 = rospy.Time.now().to_sec()
-        current_angle = angular_speed*(t1-t0)
-        angleDiff = self.checkAngleDifference(starting, self.yaw);
-        if(abs(relative_angle - angleDiff) < 0.1):
-            break;
-
-    rospy.loginfo("Turn Difference: " + str(angleDiff));
-    
-    if(self.state != "Turn"):
-        rospy.logwarn("Turn stopped due to state change");
+  def command_turn(self, angleToTurn):
+      if(not self.odomRecd):
+          rospy.loginfo("Trying to turn without odom recd.");
+          return False;
+      starting = self.yaw;
+      desired = starting + angleToTurn;
+      if(desired > math.pi):
+          desired = desired - 2*math.pi;
+      elif(desired < -math.pi):
+          desired = desired + 2*math.pi;
       
-    self.sendStopCmd();
+      current = starting;
+      rospy.loginfo("Starting Turning: Current(Starting):" + str(current) + " Desired:" + str(desired));
 
-    if(abs(relative_angle - angleDiff) < 0.2):
-        return True;
-    else:
-        return False;
+      turn_direction = 1;
+
+      if(desired > starting):
+          if(desired - starting > math.pi):
+              turn_direction = -1;
+          t_end = time.time() + 30;
+          while(self.state == "Turn" and not rospy.is_shutdown()):
+              self.smooth_drive(0.0,turn_direction*0.5);
+              time.sleep(0.01);
+              current = self.yaw;
+              #rospy.loginfo_throttle(5,"Turning: " + str(current) + " " + str(desired));
+              rospy.loginfo_throttle(5,"des > sta - Turning: Starting: " + str(starting) + " Current:" + str(current) + " Desired: " + str(desired));
+              if(current - desired > 0.01 or starting - current > 0.01):
+                  self.sendStopCmd();
+                  rospy.loginfo("Turn Successful!");
+#                  angleDiff = self.checkAngleDifference(desired, current);
+#rospy.loginfo("Turn Difference: " + str(angleDiff));
+                  #some times due to minor shift in odom, it says turn successful even when it isn't.
+#                  if(angleDiff > 0.5):
+#                      rospy.logwarn("Turn didn't execute properly. Trying to turn again...");
+#                      return self.command_turn(angleToTurn);
+                  return True;
+                  break;
+              if(time.time() > t_end):
+                  rospy.logwarn("Stopping the turn, couldn't finish it");
+                  self.sendStopCmd();
+                  return False;
+                  break;
+      elif(desired < starting):
+          t_end = time.time() + 30;
+          if(starting - desired > math.pi):
+              turn_direction = -1;
+          while(self.state == "Turn" and not rospy.is_shutdown()):
+              self.smooth_drive(0.0,-1*turn_direction*0.5);
+              time.sleep(0.01);
+              current = self.yaw;
+              rospy.loginfo_throttle(5,"des < sta Turning: Current: " + str(current) + " Desired: " + str(desired) +  " Starting:" + str(starting));
+              if(desired - current > 0.01 or current - starting > 0.01):
+                  self.sendStopCmd();
+                  rospy.loginfo("Turn Successful!");
+#                  angleDiff = self.checkAngleDifference(desired, current);
+#                  rospy.loginfo("Turn Difference: " + str(angleDiff));
+                  #some times due to minor shift in odom, it says turn successful even when it isn't.
+#                  if(angleDiff > 0.5):
+#                      rospy.logwarn("Turn didn't execute properly. Trying to turn again...");
+#                      return self.command_turn(angleToTurn);
+                  return True;
+                  break;
+              if(time.time() > t_end):
+                  rospy.logwarn("Stopping the turn, couldn't finish it");
+                  self.sendStopCmd();
+                  return False;
+                  break;
+      
+      self.sendStopCmd();
+      if(self.state != "Turn"):
+          rospy.logwarn("Turn stopped due to state change");
+      
+      return False;
 
   def sendStopCmd(self):
       self.smooth_drive(0.0,0.0);
+#      self.tone_pub.publish(self.STOP_TONE);
 
   def checkAngleDifference(self, ang1, ang2):
       ang1 = ang1 + math.pi;
@@ -509,51 +542,10 @@ class DriveCreate2:
     euler = tf.transformations.euler_from_quaternion(quaternion)
     self.yaw = euler[2]
 
-
-  def executeTurn(self, nextTurn):
-    if(nextTurn == 'E'):
-        for stpCnter in range(50):
-            self.smooth_drive(0.2, 0);
-            time.sleep(0.02);
-        self.sendStopCmd();
-        self.sourceSelected = self.destinationSelected;
-        self.destinationSelected = None;
-        rospy.loginfo("Stopping at end");
-        self.sendStopCmd();
-        self.state = "Stop";
-    
-    elif(nextTurn == 'L' or nextTurn == 'R'):
-        turnSign = 1;
-        clockwise = 0;
-        if(nextTurn == 'R'):
-            turnSign = -1;
-            clockwise = 1;
-
-        for stpCnter in range(50):
-            self.smooth_drive(0.2, 0);
-            time.sleep(0.02);
-        rospy.loginfo("Turning Now");
-        self.sendStopCmd();
-        self.state = "Turn";
-        if(self.command_turn(0.2, math.pi/2 , clockwise)):
-            self.state = "FollowLine";
-            rospy.loginfo("Turned...");
-        else:
-            self.state = "Error, Turn not successfull";
-            rospy.loginfo("Turn failed");
-            self.sendStopCmd();
-
-    elif(nextTurn == 'S'):
-        self.smooth_drive(0.4, (-float(self.line_err)/40.0));
-        rospy.loginfo("Going Straight");
-    
-    if(nextTurn == 'S' or nextTurn == 'L' or nextTurn == 'R'):
-        self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
-
   def runThreadFunc(self):
       while not rospy.is_shutdown():
         time.sleep(0.02);
-
+          
         if(self.state == "Stop"):
             self.sendStopCmd();
             continue;
@@ -565,31 +557,60 @@ class DriveCreate2:
           self.sendStopCmd();
           continue;
       
-        if(len(self.currentIntersectionCode) > 0):
+        if(self.line_err == -1000.0):
+            self.noLineCount = self.noLineCount + 1;
+            if(self.noLineCount > 50):
+                rospy.loginfo_throttle(5,"Stopping since line isn't visible");
+                self.sendStopCmd();
+                self.state = "Stop";
+            
+        elif(self.intersection_err != -1000.0):
+            while(self.intersection_err != -1000.0):
+                self.smooth_drive(0.3, (-float(self.intersection_err)/60.0));
+            rospy.loginfo("[Intersection] Sent Stop cmd");
             nextTurn = self.currentPath[self.currentPathIndex];
             self.currentPathIndex = self.currentPathIndex + 1;
             rospy.loginfo("Next Turn is: " + nextTurn); 
-            self.executeTurn(nextTurn);
-            self.intersectionCodeMutex.acquire();
-            self.currentIntersectionCode = '';
-            self.intersectionCodeMutex.release();
-        
-        elif(self.intersection_err != -1000.0):
-            self.smooth_drive(0.2, (-float(self.intersection_err)/60.0));
+            if(nextTurn == 'E'):
+                for stpCnter in range(50):
+                    self.smooth_drive(0.2, 0);
+                    time.sleep(0.02);
+                self.sendStopCmd();
+                self.sourceSelected = self.destinationSelected;
+                self.destinationSelected = None;
+                rospy.loginfo("Stopping at end");
+                self.sendStopCmd();
+                self.state = "Stop";
+            
+            elif(nextTurn == 'L' or nextTurn == 'R'):
+                turnSign = 1;
+                if(nextTurn == 'R'):
+                    turnSign = -1;
+
+                for stpCnter in range(50):
+                    self.smooth_drive(0.2, 0);
+                    time.sleep(0.02);
+                rospy.loginfo("Turning Now");
+                self.sendStopCmd();
+                self.state = "Turn";
+                if(self.command_turn((turnSign*math.pi)/2)):
+                    self.state = "FollowLine";
+                    rospy.loginfo("Turned...");
+                else:
+                    self.state = "Error, Turn not successfull";
+                    rospy.loginfo("Turn failed");
+
+            elif(nextTurn == 'S'):
+                self.smooth_drive(0.4, (-float(self.line_err)/40.0));
+                rospy.loginfo("Going Straight");
+            
+            if(nextTurn == 'S' or nextTurn == 'L' or nextTurn == 'R'):
+                self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
             
         elif(self.line_err != -1000.0):
             self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/40.0));
             self.noLineCount = 0;
-        
-        elif(self.line_err == -1000.0):
-            self.noLineCount = self.noLineCount + 1;
-            if(self.noLineCount > 40):
-                rospy.loginfo_throttle(5,"Stopping since line isn't visible");
-                self.sendStopCmd();
-                self.state = "Stop";
-        else:
-          self.sendStopCmd();
-
+            
       print("Thread exited cleanly");
 
 def main(args):

@@ -103,7 +103,7 @@ ImageInfoExtractor::ImageInfoExtractor() : scanner()
     intersection_seen_count = 0;
 
     checkLine = true;
-    checkIntersection = true;
+    checkIntersection = false;
     checkQRCode = false;
 
     no_line_count = 0;
@@ -214,7 +214,7 @@ void ImageInfoExtractor::publishLineErr(cv_bridge::CvImagePtr cv_ptr)
 void ImageInfoExtractor::publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr)
 {
     //Area to exclude in the image
-    cv::Rect rect((int)cv_ptr->image.size().width/4, 0, (int)2*cv_ptr->image.size().width/4, (int)2*cv_ptr->image.size().height/3);
+    cv::Rect rect(0, 0, (int)cv_ptr->image.size().width, (int)2*cv_ptr->image.size().height/3);
 
     //checks red intersections
     try
@@ -271,7 +271,7 @@ void ImageInfoExtractor::publishIntersectionErr(cv_bridge::CvImagePtr cv_ptr)
             cx = (float)mu.m10/mu.m00;
             cy = (float)mu.m01/mu.m00;
 
-            intersection_err.data = ((cx + (int)cv_ptr->image.size().width/4 - (float)(cv_ptr->image.size().width)/2.0));
+            intersection_err.data = ((cx - (float)(cv_ptr->image.size().width)/2.0));
             intersection_err_pub.publish(intersection_err);
             intersection_seen_count = 1;
         }
@@ -352,8 +352,6 @@ int main(int argc, char** argv) {
 
     ros::NodeHandle nodeh;
 
-    std::string image_sub_topic = "/raspicam_node/image_raw";
-
     ImageInfoExtractor imageInfoExtractor;
 
     nodeh.param("/processImage/b_lower", imageInfoExtractor.bgr_color_lower[0], 0);
@@ -379,16 +377,12 @@ int main(int argc, char** argv) {
     nodeh.param("/processImage/checkQR", imageInfoExtractor.checkQRCode, false);
     ROS_INFO("check QR Code: %d\n", (imageInfoExtractor.checkQRCode));
 
-
-    nodeh.param("/processImage/image_sub_topic",  image_sub_topic, std::string("/raspicam_node/image_raw"));
-
-    ROS_INFO("Subscribing to image topic: %s", image_sub_topic.c_str());
     imageInfoExtractor.tagsPublisher = nodeh.advertise<std_msgs::String>("/qr_codes", 10);
 
     imageInfoExtractor.err_pub = nodeh.advertise<std_msgs::Float32>("/line_error", 1);
     imageInfoExtractor.line_visible_pub = nodeh.advertise<std_msgs::Bool>("/line_visible", 1);
     imageInfoExtractor.intersection_err_pub = nodeh.advertise<std_msgs::Float32>("/intersection_err", 1);
-    ros::Subscriber img_sub = nodeh.subscribe(image_sub_topic.c_str(), 1, &ImageInfoExtractor::imgCallback, &imageInfoExtractor);
+    ros::Subscriber img_sub = nodeh.subscribe("/raspicam_node/image_raw", 1, &ImageInfoExtractor::imgCallback, &imageInfoExtractor);
 
     ros::spin();
     return 0;
