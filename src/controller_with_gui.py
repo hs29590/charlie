@@ -416,7 +416,7 @@ class DriveCreate2:
       value = self.mcp.read_adc(self.MCP_CHANNEL);
       self.sourceDestinationVar.set("System Batt:" + str(round(value/53.4,2)) + " V");
       if(value/53.4 < 10):
-          self.tone_pub.publish(self.STOP_TONE);
+          #self.tone_pub.publish(self.STOP_TONE);
           self.sourceDestinationVar.set("System Batt:" + str(round(value/53.4,2)) + " V CHARGE NOW");
 
       self.sourceDestinationLabel.update_idletasks();
