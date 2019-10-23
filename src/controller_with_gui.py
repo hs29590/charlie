@@ -74,11 +74,11 @@ class DriveCreate2:
     self.intersectionVisible = StringVar();
     self.intersectionVisible.set("Intersection: False");
 
-    self.qrCodeVariable = StringVar();
-    self.qrCodeVariable.set("QR Code: NA");
+    #self.qrCodeVariable = StringVar();
+    #self.qrCodeVariable.set("QR Code: NA");
 
-    self.nextTurnVariable = StringVar();
-    self.nextTurnVariable.set("Next Turn: NA");
+    #self.nextTurnVariable = StringVar();
+    #self.nextTurnVariable.set("Next Turn: NA");
     
     self.lineVisible = StringVar();
     self.lineVisible.set("Line: False");
@@ -99,8 +99,8 @@ class DriveCreate2:
     self.srcNode = StringVar();
     self.dstNode = StringVar();
 
-    self.sourceDestinationVar = StringVar();
-    self.sourceDestinationVar.set("System Batt: N/A ");
+    #self.sourceDestinationVar = StringVar();
+    #self.sourceDestinationVar.set("System Batt: N/A ");
     
     self.srcNode.set(' ');
     self.dstNode.set(' ');
@@ -117,19 +117,19 @@ class DriveCreate2:
     self.lineLabel.grid(row=0, column=0);
 
     self.oiModeLabel = ttk.Label(self.mainframe, textvariable=self.current_oi_mode, font=('Helvetica',12));
-    self.oiModeLabel.grid(row=15,column=0);
+    self.oiModeLabel.grid(row=14,column=0);
 
     self.sonarLabel = ttk.Label(self.mainframe, textvariable=self.sonarStatus, font=('Helvetica',12));
     self.sonarLabel.grid(row=10,column=1);
 
-    self.intersectionLabel = ttk.Label(self.mainframe, textvariable=self.intersectionVisible, font=('Helvetica',12));
-    self.intersectionLabel.grid(row=14, column=0);
+    #self.intersectionLabel = ttk.Label(self.mainframe, textvariable=self.intersectionVisible, font=('Helvetica',12));
+    #self.intersectionLabel.grid(row=14, column=0);
     
-    self.qrCodeLabel = ttk.Label(self.mainframe, textvariable=self.qrCodeVariable, font=('Helvetica',12));
-    self.qrCodeLabel.grid(row=14, column=1);
+    #self.qrCodeLabel = ttk.Label(self.mainframe, textvariable=self.qrCodeVariable, font=('Helvetica',12));
+    #self.qrCodeLabel.grid(row=14, column=1);
 
-    self.nextTurnLabel = ttk.Label(self.mainframe, textvariable=self.nextTurnVariable, font=('Helvetica',10));
-    self.nextTurnLabel.grid(row=10,column=0);
+    #self.nextTurnLabel = ttk.Label(self.mainframe, textvariable=self.nextTurnVariable, font=('Helvetica',10));
+    #self.nextTurnLabel.grid(row=10,column=0);
 
     #GUI Buttons
 
@@ -145,8 +145,8 @@ class DriveCreate2:
 #    ttk.Button(self.mainframe, text="FROM", style='my.TButton', command=self.selectSource, width = 16).grid(row=2,column=0, pady=10)
 #    ttk.Button(self.mainframe, text="TO", style='my.TButton', command=self.selectDestination, width = 16).grid(row=2,column=1, pady=10)
     
-    self.sourceDestinationLabel = ttk.Label(self.mainframe, textvariable=self.sourceDestinationVar, font=('Helvetica',12));
-    self.sourceDestinationLabel.grid(row=0, column=1);
+    #self.sourceDestinationLabel = ttk.Label(self.mainframe, textvariable=self.sourceDestinationVar, font=('Helvetica',12));
+    #self.sourceDestinationLabel.grid(row=0, column=1);
 
     self.root.after(1000, self.updateLabel);
 
@@ -163,7 +163,7 @@ class DriveCreate2:
     self.last_drive_lin = 0.0;
     self.last_drive_ang = 0.0;
     self.noLineCount = 0;
-    self.intersectionVisibleCount = 0;
+    #self.intersectionVisibleCount = 0;
     
     self.line_err = -1000.0;
     self.intersection_err = -1000.0;
@@ -181,7 +181,7 @@ class DriveCreate2:
     self.odom_sub = rospy.Subscriber('odom', Odometry, self.odomCallback)
     self.sonar_sub = rospy.Subscriber('sonar_drive', Bool, self.sonarCallback);
     self.intersection_sub = rospy.Subscriber('/intersection_err', Float32, self.intersectionCallback); 
-    self.qrcode_sub = rospy.Subscriber('/qr_codes', String, self.qrCodeCallback);
+    #self.qrcode_sub = rospy.Subscriber('/qr_codes', String, self.qrCodeCallback);
    
     self.timeOfLastActivity = rospy.Time.now();
     self.timeOfLastIntersection = rospy.Time.now();
@@ -397,10 +397,10 @@ class DriveCreate2:
       self.lineLabel.update_idletasks();
       self.oiModeLabel.update_idletasks();
       self.sonarLabel.update_idletasks();
-      self.nextTurnLabel.update_idletasks();
-      self.intersectionLabel.update_idletasks();
-      self.intersectionVisible.set("Intersection: " + str(self.intersection_err));
-      self.qrCodeLabel.update_idletasks();
+      #self.nextTurnLabel.update_idletasks();
+      #self.intersectionLabel.update_idletasks();
+      #self.intersectionVisible.set("Intersection: " + str(self.intersection_err));
+      #self.qrCodeLabel.update_idletasks();
 
       self.root.update_idletasks();
 
@@ -413,13 +413,13 @@ class DriveCreate2:
           rospy.loginfo("Going to sleep");
 
 
-      value = self.mcp.read_adc(self.MCP_CHANNEL);
-      self.sourceDestinationVar.set("System Batt:" + str(round(value/53.4,2)) + " V");
-      if(value/53.4 < 10):
+      #value = self.mcp.read_adc(self.MCP_CHANNEL);
+      #self.sourceDestinationVar.set("System Batt:" + str(round(value/53.4,2)) + " V");
+      #if(value/53.4 < 10):
           #self.tone_pub.publish(self.STOP_TONE);
-          self.sourceDestinationVar.set("System Batt:" + str(round(value/53.4,2)) + " V CHARGE NOW");
+          #self.sourceDestinationVar.set("System Batt:" + str(round(value/53.4,2)) + " V CHARGE NOW");
 
-      self.sourceDestinationLabel.update_idletasks();
+      #self.sourceDestinationLabel.update_idletasks();
       self.root.after(200, self.updateLabel);
  
   def intersectionCallback(self, msg):
@@ -435,8 +435,8 @@ class DriveCreate2:
   def current_mode_callback(self,msg):
       self.current_oi_mode.set("OI Mode: " + str(msg.mode));
 
-  def qrCodeCallback(self, msg):
-      self.qrCodeVariable.set("QR: " + msg.data);
+  #def qrCodeCallback(self, msg):
+      #self.qrCodeVariable.set("QR: " + msg.data);
 
   def batteryCallback(self,msg):
       self.batteryStatus.set(str("Robot Batt: " + "%.2f" % (msg.data*100) + "%"));
@@ -616,8 +616,8 @@ class DriveCreate2:
                 self.smooth_drive(0.4, (-float(self.line_err)/40.0));
                 rospy.loginfo("Going Straight");
             
-            if(nextTurn == 'S' or nextTurn == 'L' or nextTurn == 'R'):
-                self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
+            #if(nextTurn == 'S' or nextTurn == 'L' or nextTurn == 'R'):
+                #self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
             
         elif(self.line_err != -1000.0):
             self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/40.0));
