@@ -37,6 +37,7 @@ class DriveCreate2:
     self.isAsleep = False;
 
     self.LINEAR_SPEED = 0.8;   
+    self.slow_start_speed = 0.1;
     self.state = "Stop"
     self.TIME_FOR_MOVING_TOWARDS_INTERSECTION = 2; #in seconds, this should also change with the LINEAR SPEED
     self.TIME_FOR_TURNING = 4; #in seconds, this should also change with the LINEAR_SPEED
@@ -322,6 +323,7 @@ class DriveCreate2:
           else:
               self.undock_pub.publish();
               self.state = "FollowLine";
+              self.slow_start_speed = 0.1;
       else:
           rospy.logwarn("Either Source or Destination is not set");
           tkMessageBox.showerror("Error", "Set FROM and TO")
@@ -352,6 +354,7 @@ class DriveCreate2:
               self.undock_pub.publish();
               if(self.command_turn(math.pi)):
                   self.state = "FollowLine";
+                  self.slow_start_speed = 0.1;
               else:
                   self.state = "Error, Turn not successfull";
       else:
@@ -576,51 +579,13 @@ class DriveCreate2:
                 self.sendStopCmd();
                 self.state = "Stop";
             
-        elif(self.intersection_err != -1000.0):
-            while(self.intersection_err != -1000.0):
-                self.smooth_drive(0.3, (-float(self.intersection_err)/60.0));
-            rospy.loginfo("[Intersection] Sent Stop cmd");
-            nextTurn = self.currentPath[self.currentPathIndex];
-            self.currentPathIndex = self.currentPathIndex + 1;
-            rospy.loginfo("Next Turn is: " + nextTurn); 
-            if(nextTurn == 'E'):
-                for stpCnter in range(50):
-                    self.smooth_drive(0.2, 0);
-                    time.sleep(0.02);
-                self.sendStopCmd();
-                self.sourceSelected = self.destinationSelected;
-                self.destinationSelected = None;
-                rospy.loginfo("Stopping at end");
-                self.sendStopCmd();
-                self.state = "Stop";
-            
-            elif(nextTurn == 'L' or nextTurn == 'R'):
-                turnSign = 1;
-                if(nextTurn == 'R'):
-                    turnSign = -1;
-
-                for stpCnter in range(50):
-                    self.smooth_drive(0.2, 0);
-                    time.sleep(0.02);
-                rospy.loginfo("Turning Now");
-                self.sendStopCmd();
-                self.state = "Turn";
-                if(self.command_turn((turnSign*math.pi)/2)):
-                    self.state = "FollowLine";
-                    rospy.loginfo("Turned...");
-                else:
-                    self.state = "Error, Turn not successfull";
-                    rospy.loginfo("Turn failed");
-
-            elif(nextTurn == 'S'):
-                self.smooth_drive(0.4, (-float(self.line_err)/40.0));
-                rospy.loginfo("Going Straight");
-            
-            #if(nextTurn == 'S' or nextTurn == 'L' or nextTurn == 'R'):
-                #self.nextTurnVariable.set("Next Turn: " + self.currentPath[self.currentPathIndex]);
-            
         elif(self.line_err != -1000.0):
-            self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/40.0));
+            if(self.slow_start_speed < self.LINEAR_SPEED):
+                self.slow_start_speed = self.slow_start_speed + 0.01;
+                self.smooth_drive(self.slow_start_speed, (-float(self.line_err)/40.0));
+            else:
+                self.smooth_drive(self.LINEAR_SPEED, (-float(self.line_err)/40.0));
+
             self.noLineCount = 0;
             
       print("Thread exited cleanly");
